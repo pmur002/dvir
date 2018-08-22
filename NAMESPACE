@@ -1,0 +1,13 @@
+
+import("grid")
+importFrom("grDevices", "dev.cur")
+import("hexView")
+
+export("readDVI",
+       "grid.dvi",
+       "dviGrob",
+       "fontPaths")
+
+S3method("print", "DVI")
+S3method("dviGrob", "DVI")
+S3method("dviGrob", "character")
