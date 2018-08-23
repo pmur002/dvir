@@ -53,23 +53,26 @@ dviFonts.character <- function(x, device) {
 ## will be matched with a font that has a postscriptname property
 ## equal to the FullName that we extracted from the AFM file.
 
-configFile <- file.path(getwd(), ".fonts.conf")
+initFontConfig <- function() {
+    tmpdir <- file.path(tempdir(), "dvir")
+    dir.create(tmpdir)
+    configFile <- file.path(tmpdir, ".fonts.conf")
 
-library(xml2)
-config <- xml_new_root(xml_dtd("fontconfig", system="fonts.dtd"))
-xml_add_child(config, "fontconfig")
-xml_add_child(config, xml_comment("include TeX fonts"))
-xml_add_child(config, "dir",
-              "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm")
-## Special case cmex10 for testing
-xml_add_child(config, "dir",
-              file.path(getwd(), "CMEX"))
-## cat(as.character(fontconfig))
-set("fontconfig", config)
-write_xml(config, configFile)
-set("fontcache", NULL)
+    config <- xml_new_root(xml_dtd("fontconfig", system="fonts.dtd"))
+    xml_add_child(config, "fontconfig")
+    xml_add_child(config, xml_comment("include TeX fonts"))
+    xml_add_child(config, "dir",
+                  dirname(system("kpsewhich cmr10 --format=.pfb", intern=TRUE)))
+    ## Special case cmex10 
+    xml_add_child(config, "dir", system.file("fonts", package="dvir"))
+    ## cat(as.character(fontconfig))
+    set("fontconfig", config)
+    write_xml(config, configFile)
+    set("fontconfigFile", configFile)
+    set("fontcache", NULL)
+}
 
-addFont <- function(family, psname) {
+addFontConfig <- function(family, psname) {
     fontcache <- get("fontcache")
     if (is.null(fontcache) ||
         !paste(family, psname) %in% fontcache) {
@@ -84,6 +87,7 @@ addFont <- function(family, psname) {
                                 mode="assign", binding="strong")
         xml_add_child(edit, "string", psname)
         set("fontconfig", fontconfig)
+        configFile <- get("fontconfigFile")
         write_xml(fontconfig, configFile)
         set("fontcache", c(fontcache, paste(family, psname)))
         ## TODO
@@ -195,7 +199,8 @@ definePDFFont <- function(fontname) {
 defineCairoFont <- function(fontname) {
     ## Special case cmex10 for testing
     if (fontname == "cmex10") {
-        afm <- readLines("CMEX/cmexunicode10.afm")
+        afm <- readLines(system.file("fonts", "cmexunicode10.afm",
+                                     package="dvir"))
     } else {
         afm <- readLines(findTeXFontFile(fontname, suffix=".afm"))
     }
@@ -209,11 +214,11 @@ defineCairoFont <- function(fontname) {
 }
 
 defineFont <- function(fontname, device) {
-    if (device == "postscript") {
+    if (psDevice(device)) {
         defn <- definePostScriptFont(fontname)
-    } else if (device == "pdf") {
+    } else if (pdfDevice(device)) {
         defn <- definePDFFont(fontname)
-    } else if (grepl("cairo", device)) {
+    } else if (cairoDevice(device)) {
         defn <- defineCairoFont(fontname)
     } else {
         ## TODO
@@ -222,14 +227,15 @@ defineFont <- function(fontname, device) {
 }
 
 fontFamily <- function(font, char, device) {
-    if (device %in% c("postscript", "pdf")) {
+    if (psDevice(device) || pdfDevice(device)) {
         if (!is.null(attr(char, "zeroChar"))) {
             paste0(font$name, "Zero")
         } else {
             font$name
         }
-    } else if (grepl("cairo", device)) {
-        addFont(font$family, font$postscriptname)
+    ## NOTE that png(type="Xlib") has name "PNG" (all caps), etc
+    } else if (cairoDevice(device)) {
+        addFontConfig(font$family, font$postscriptname)
         paste(font$family, font$postscriptname)
     }
 }

@@ -1,11 +1,23 @@
 
 import("grid")
-importFrom("grDevices", "dev.cur")
 import("hexView")
-
+importFrom("grDevices",
+           "dev.cur")
+importFrom("xml2",
+           "write_xml",
+           "xml_add_child",
+           "xml_add_sibling",
+           "xml_comment",
+           "xml_dtd",
+           "xml_new_root",
+           "xml_root")
+           
 export("readDVI",
-       "grid.dvi",
-       "dviGrob",
+
+       "grid.dvi", "dviGrob",
+
+       "grid.latex", "latexGrob",
+       
        "fontPaths")
 
 S3method("print", "DVI")

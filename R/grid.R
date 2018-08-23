@@ -132,6 +132,14 @@ dviGrob.DVI <- function(dvi,
                         rot=0,
                         device=names(dev.cur()),
                         name=NULL) {
+    if (!is.unit(x))
+        x <- unit(x, default.units)
+    if (!is.unit(y))
+        y <- unit(y, default.units)
+    if (device == "null device") {
+        dev.new()
+        device <- names(dev.cur())
+    }
     fonts <- dviFonts(dvi, device)
     metrics <- dviMetric(dvi, device)
     vp <- viewport(x, y,
@@ -150,6 +158,30 @@ grid.dvi <- function(...) {
     grid.draw(dviGrob(...))
 }
 
+## Very simplistic for now
+## Needs flexibility in terms of LaTeX preable/postamble, TeX engine, ...
+latexGrob <- function(tex,
+                      x=0.5, y=0.5,
+                      default.units="npc", just="centre",
+                      rot=0,
+                      device=names(dev.cur()),
+                      name=NULL) {
+    texFile <- tempfile(fileext=".tex")
+    dviFile <- gsub("[.]tex", ".dvi", texFile)
+    writeLines(c("\\documentclass[12pt]{standalone}",
+                 "\\begin{document}",
+                 tex,
+                 "\\end{document}"),
+               texFile)
+    system(paste0("latex -output-directory=", tempdir(), " ", texFile))
+    dvi <- readDVI(dviFile)
+    dviGrob(dvi, x, y, default.units, just, rot, device, name)
+}
+    
+grid.latex <- function(...) {
+    grid.draw(latexGrob(...))
+}
+                       
 ## Helper for embedding fonts in postscript() or pdf() output
 fontPaths <- function(x) {
     if (!inherits(x, "DVIgrob"))

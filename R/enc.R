@@ -239,7 +239,7 @@ fontEnc <- function(afmFile) {
 ## TODO
 ## Devices other than postscript, pdf, or Cairo-based
 getChar <- function(raw, fontname, device) {
-    if (device %in% c("postscript", "pdf")) {
+    if (psDevice(device) || pdfDevice(device)) {
         if (raw == 0) {
             char <- rawToChar(as.raw(1))
             attr(char, "zeroChar") <- TRUE
@@ -247,7 +247,7 @@ getChar <- function(raw, fontname, device) {
         } else {
             rawToChar(raw)
         }
-    } else if (grepl("cairo", device)) {
+    } else if (cairoDevice(device)) {
         rawToUTF8(raw, fontname)
     }
 }

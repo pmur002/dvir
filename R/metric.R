@@ -54,8 +54,8 @@ metric_info_139 <- function(op) {
     set("top", Inf)
     set("bottom", -Inf)
     set("baseline", NA)
-    set("left", 0)
-    set("right", 0)
+    set("left", Inf)
+    set("right", -Inf)
 }
 
 ## eop
