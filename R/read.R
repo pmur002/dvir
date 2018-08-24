@@ -88,6 +88,13 @@ op163 <- int2
 op164 <- int3
 op165 <- int4
 
+## z<i>
+op166 <- NULL
+op167 <- int1
+op168 <- int2
+op169 <- int3
+op170 <- int4
+
 ## fnt_num_<i>
 for (i in 171:234) {
     assign(paste0("op", i), NULL)

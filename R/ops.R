@@ -156,6 +156,17 @@ op_y <- function(op) {
     debugline("v")
 }
 
+## z<i>
+op_z <- function(op) {
+    debugmove()
+    a <- op$blocks$op.opparams
+    if (!is.null(a)) {
+        set("z", blockValue(a))
+    }
+    set("v", get("v") + get("z"))
+    debugline("v")
+}
+
 ## fnt_num_<i>
 op_fnt_num <- function(op) {
     f <- blockValue(op$blocks$op.opcode) - 171 + 1 ## + 1 for 1-based indexing

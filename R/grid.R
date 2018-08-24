@@ -10,15 +10,21 @@ for (i in 0:127) {
 }
 
 ## set_rule
+## NOTE that we do a "rule_pixels" calculation here
+## http://ftp.cs.stanford.edu/tex/dist/texware/dvitype.web
 gridRule <- function(op) {
     a <- blockValue(op$blocks$op.opparams.a)
     b <- blockValue(op$blocks$op.opparams.b)
-    x <- unit(fromTeX(get("h")), "native")
-    y <- unit(fromTeX(get("v")), "native")
-    width <- unit(fromTeX(b), "native")
-    height <- unit(fromTeX(a), "native")
-    rectGrob(x, y, width, height, just=c("left", "bottom"),
-             gp=gpar(col=NA, fill="black"))
+    if (a > 0 && b > 0) {
+        x <- unit(fromTeX(get("h")), "native")
+        y <- unit(fromTeX(get("v")), "native")
+        width <- unit(fromTeX(b), "native")
+        height <- unit(fromTeX(a), "native")
+        rectGrob(x, y, width, height, just=c("left", "bottom"),
+                 gp=gpar(col=NA, fill="black"))
+    } else {
+        NULL
+    }
 }
 
 grid_op_132 <- function(op) {
@@ -75,6 +81,13 @@ grid_op_162 <- op_y
 grid_op_163 <- op_y
 grid_op_164 <- op_y
 grid_op_165 <- op_y
+
+## z<i>
+grid_op_166 <- op_z
+grid_op_167 <- op_z
+grid_op_168 <- op_z
+grid_op_169 <- op_z
+grid_op_170 <- op_z
 
 ## fnt_num_<i>
 for (i in 171:234) {
@@ -148,7 +161,8 @@ dviGrob.DVI <- function(dvi,
                    height=unit(metrics$bottom - metrics$top, "mm"),
                    just=just, angle=rot,
                    xscale=c(metrics$left, metrics$right),
-                   yscale=c(metrics$bottom, metrics$top))
+                   yscale=c(metrics$bottom, metrics$top),
+                   name="dvi.vp")
     grobs <- dvigrid(dvi, device)
     children <- do.call(gList, grobs[sapply(grobs, is.grob)])
     gTree(children=children, fonts=fonts, vp=vp, name=name, cl="DVIgrob")

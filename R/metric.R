@@ -1,25 +1,36 @@
 
 ## Run through DVI and extract useful info
 
+updateHoriz <- function(x) {
+    right <- get("right")
+    if (!is.finite(right) || x > right) {
+        set("right", x)
+    }
+    left <- get("left")
+    if (!is.finite(left) || x < left) {
+        set("left", x)
+    }
+}
+
+updateVert <- function(x) {
+    top <- get("top")
+    if (!is.finite(top) || x < top) {
+        set("top", x)
+    }
+    bottom <- get("bottom")
+    if (!is.finite(bottom) || x > bottom) {
+        set("bottom", x)
+    }
+}
+    
+
 ## set_char_<i>
 metric_set_char <- function(op) {
     ## Check position BEFORE char
-    h <- get("h")
-    if (h > get("right")) {
-        set("right", h)
-    }
-    if (h < get("left")) {
-        set("left", h)
-    }
+    updateHoriz(get("h"))
     ## Move to end of char and check position again
     tg <- op_set_char(op)
-    h <- get("h")
-    if (h > get("right")) {
-        set("right", h)
-    }
-    if (h < get("left")) {
-        set("left", h)
-    }
+    updateHoriz(get("h"))
     ## REMEMBER that v measures DOWN
     ## ALSO, v is a baseline for text
     v <- get("v")
@@ -43,10 +54,32 @@ for (i in 0:127) {
 }
 
 ## set_rule
-metric_info_132 <- op_set_rule
+metric_info_132 <- function(op) {
+    ## (h, v) is bottom-left
+    h <- get("h")
+    v <- get("v")
+    updateHoriz(h)
+    updateVert(v)
+    op_set_rule(op)
+    a <- blockValue(op$blocks$op.opparams.a)
+    b <- blockValue(op$blocks$op.opparams.b)
+    updateVert(v - a)
+    updateHoriz(h + b)
+}
 
 ## put_rule
-metric_info_137 <- op_put_rule
+metric_info_137 <- function(op) {
+    ## (h, v) is bottom-left 
+    h <- get("h")
+    v <- get("v")
+    updateHoriz(h)
+    updateVert(v)
+    op_put_rule(op)
+    a <- blockValue(op$blocks$op.opparams.a)
+    b <- blockValue(op$blocks$op.opparams.b)
+    updateVert(v - a)
+    updateHoriz(h + b)
+}
 
 ## bop
 metric_info_139 <- function(op) {
@@ -99,6 +132,13 @@ metric_info_162 <- op_y
 metric_info_163 <- op_y
 metric_info_164 <- op_y
 metric_info_165 <- op_y
+
+## z<i>
+metric_info_166 <- op_z
+metric_info_167 <- op_z
+metric_info_168 <- op_z
+metric_info_169 <- op_z
+metric_info_170 <- op_z
 
 ## fnt_num_<i>
 for (i in 171:234) {

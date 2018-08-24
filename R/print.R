@@ -185,6 +185,33 @@ print_op_165 <- function(op) {
     printY(op, 4)
 }
 
+## z<i>
+printZ <- function(op, i) {
+    str <- paste0("z", i)
+    if (i > 0) {
+        a <- blockValue(op$blocks$op.opparams)
+        str <- paste0(str, "           ",
+                      "a=", a)
+    }
+    cat(str, "\n")
+}
+
+print_op_166 <- function(op) {
+    printZ(op, 0)
+}
+print_op_167 <- function(op) {
+    printZ(op, 1)
+}
+print_op_168 <- function(op) {
+    printZ(op, 2)
+}
+print_op_169 <- function(op) {
+    printZ(op, 3)
+}
+print_op_170 <- function(op) {
+    printZ(op, 4)
+}
+
 ## fnt_num_<i>
 print_fnt_num <- function(op) {
     str <- paste0("fnt_num_",
