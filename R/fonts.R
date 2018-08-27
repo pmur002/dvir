@@ -103,16 +103,27 @@ addFontConfig <- function(family, psname) {
     }
 }
 
+initFontMap <- function() {
+    mapfile <- system("kpsewhich pdftex.map", intern=TRUE)
+    set("fontmap", readLines(mapfile))
+}
 
 ################################################################################
 
 findTeXFontFile <- function(fontname, checksum, suffix=".afm") {
-    file <- system(paste0("kpsewhich ", fontname,
+    ## Map fontname to actual font file
+    map <- get("fontmap")
+    fontline <- grep(paste0("^", fontname, " "), map)
+    ## TODO
+    ## This needs to be a lot smarter
+    ## (see, e.g., pdftex manual for pdftex.map syntax)
+    font <- gsub(".+<|[.]pfb$", "", map[fontline])
+    file <- system(paste0("kpsewhich ", font,
                           " --format=", suffix),
                    intern=TRUE)
     if (length(file) == 0) {
         ## Try harder
-        file <- system(paste0("kpsewhich ", fontname,
+        file <- system(paste0("kpsewhich ", font,
                               " --format=", suffix, " --must-exist"),
                        intern=TRUE)
     }
@@ -206,11 +217,12 @@ defineCairoFont <- function(fontname) {
     }
     familyname <- paste(strsplit(afm[grep("^FamilyName", afm)], " ")[[1]][-1],
                         collapse=" ")
-    fullname <- paste(strsplit(afm[grep("^FullName", afm)], " ")[[1]][-1],
-                      collapse=" ")
-    list(family=familyname,
-         postscriptname=fullname,
-         size=fontSize(fullname))
+    ## These now taken from definePDFFont() result
+    ## fullname <- paste(strsplit(afm[grep("^FullName", afm)], " ")[[1]][-1],
+    ##                   collapse=" ")
+    list(family=familyname)
+         ## postscriptname=fullname,
+         ## size=fontSize(fullname))
 }
 
 defineFont <- function(fontname, device) {
@@ -219,7 +231,9 @@ defineFont <- function(fontname, device) {
     } else if (pdfDevice(device)) {
         defn <- definePDFFont(fontname)
     } else if (cairoDevice(device)) {
-        defn <- defineCairoFont(fontname)
+        ## Also define PDF font for font metric calculations (see ./metric.R)
+        defn <- definePDFFont(fontname)
+        defn <- c(defn, defineCairoFont(fontname))
     } else {
         ## TODO
         ## Other devices 

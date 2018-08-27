@@ -184,4 +184,36 @@ dviMetric <- function(x, device, scale=1, TeX=FALSE) {
     info
 }
 
+################################################################################
+
+## Calculate character metric
+## (to determine correct text advance in op_set_char)
+
+## Basically, don't trust either Cairo or PangoCairo text extent
+## calculation to be precise enough
+## SO use PDF metric instead
+
+initCharMetric <- function() {
+    cd <- dev.cur()
+    on.exit(dev.set(cd))
+    dev <- pdf(NULL)
+    set("metricPDF", dev.cur())
+}
+
+charWidth <- function(op, fonts, f) {
+    char <- getChar(op$blocks$op.opcode$fileRaw,
+                    fonts[[f]]$postscriptname,
+                    "pdf")
+    family <- fontFamily(fonts[[f]], char, "pdf")
+    ## Location (x, y) of text does not matter
+    tg <- textGrob(char, 0, 0, 
+                   gp=gpar(fontfamily=family,
+                           fontsize=fonts[[f]]$size,
+                           cex=get("scale")))
+    cd <- dev.cur()
+    on.exit(dev.set(cd))
+    dev.set(get("metricPDF"))
+    width <- xtoTeX(grobWidth(tg))
+    width
+}
 

@@ -14,4 +14,7 @@ cairoDevice <- function(device) {
         device %in% c("svg", "png", "jpeg", "tiff", "bmp")
 }
 
-                           
+rasterDevice <- function(device) {
+    !(psDevice(device) || pdfDevice(device) ||
+      (cairoDevice(device) && grepl("_ps|_pdf|svg", device)))
+}

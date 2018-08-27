@@ -58,7 +58,7 @@ op_set_char <- function(op) {
                            cex=get("scale")))
     ## grobWidth() works with text font size, NOT text location (x, y)
     ## so "native" for (x, y) should be ok
-    set("h", get("h") + xtoTeX(grobWidth(tg)))
+    set("h", get("h") + charWidth(op, fonts, f))
     debugline("char")
     ## Return text grob
     tg

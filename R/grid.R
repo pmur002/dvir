@@ -10,16 +10,19 @@ for (i in 0:127) {
 }
 
 ## set_rule
-## NOTE that we do a "rule_pixels" calculation here
+## NOTE that we need to do a "rule_pixels" calculation here
 ## http://ftp.cs.stanford.edu/tex/dist/texware/dvitype.web
 gridRule <- function(op) {
     a <- blockValue(op$blocks$op.opparams.a)
     b <- blockValue(op$blocks$op.opparams.b)
+    device <- get("device")
     if (a > 0 && b > 0) {
+        a <- minThickness(a, device)
+        b <- minThickness(b, device)
         x <- unit(fromTeX(get("h")), "native")
         y <- unit(fromTeX(get("v")), "native")
-        width <- unit(fromTeX(b), "native")
-        height <- unit(fromTeX(a), "native")
+        width <- unit(b, "native")
+        height <- unit(a, "native")
         rectGrob(x, y, width, height, just=c("left", "bottom"),
                  gp=gpar(col=NA, fill="black"))
     } else {
