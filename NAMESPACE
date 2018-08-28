@@ -11,7 +11,9 @@ importFrom("xml2",
            "xml_dtd",
            "xml_new_root",
            "xml_root")
-           
+importFrom("gdtools",
+           "fontconfig_reinit")
+
 export("readDVI",
 
        "grid.dvi", "dviGrob",

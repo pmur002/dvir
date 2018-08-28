@@ -7,6 +7,6 @@ Maintainer: Paul Murrell <paul@stat.auckland.ac.nz>
 Description: Functions to read DVI files, as produced from TeX documents,
              and render them within R.
 Depends: grid
-Imports: grDevices, hexView (>= 0.3-4), xml2
+Imports: grDevices, hexView (>= 0.3-4), xml2, gdtools
 Collate: globals.R convert.R device.R read.R ops.R print.R fonts.R enc.R metric.R grid.R zzz.R
 License: GPL-3

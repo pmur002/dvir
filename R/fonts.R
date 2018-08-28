@@ -56,8 +56,11 @@ dviFonts.character <- function(x, device) {
 initFontConfig <- function() {
     tmpdir <- file.path(tempdir(), "dvir")
     dir.create(tmpdir)
-    configFile <- file.path(tmpdir, ".fonts.conf")
-
+    configFile <- file.path(tmpdir, "10-dvir-fonts.conf")
+    ## Ensure that ~/.fonts.conf.d/ exists
+    if (!dir.exists("~/.fonts.conf.d/")) {
+        dir.create("~/.fonts.conf.d/")
+    }
     config <- xml_new_root(xml_dtd("fontconfig", system="fonts.dtd"))
     xml_add_child(config, "fontconfig")
     xml_add_child(config, xml_comment("include TeX fonts"))
@@ -91,15 +94,13 @@ addFontConfig <- function(family, psname) {
         write_xml(fontconfig, configFile)
         set("fontcache", c(fontcache, paste(family, psname)))
         ## TODO
-        ## THIS IS BAD - need something better
-        ## NOT ONLY are we destructively modifying file in ~/
-        ## BUT ALSO ~/.fonts.conf is deprecated in favour of
-        ## $XDG_CONFIG_HOME/fontconfig/fonts.conf in recent versions of
+        ## ~/.fonts.conf.d/ is deprecated in favour of
+        ## $XDG_CONFIG_HOME/fontconfig/conf.d/ in recent versions of
         ## fontconfig
-        file.copy(configFile, "~/", overwrite=TRUE)
+        file.copy(configFile, "~/.fonts.conf.d", overwrite=TRUE)
         ## Force reload of config file
         ## (this only exists in my fork of 'gdtools' in this directory)
-        gdtools:::reinit_()
+        fontconfig_reinit()
     }
 }
 
