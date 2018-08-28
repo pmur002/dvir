@@ -12,19 +12,43 @@ for (i in 0:127) {
 ## set_rule
 ## NOTE that we need to do a "rule_pixels" calculation here
 ## http://ftp.cs.stanford.edu/tex/dist/texware/dvitype.web
+
+## Below a certain thickness, draw a line segment rather
+## than filling a rectangle
+## This will allow, e.g., raster devices to antialias the result
+## (which should look much better for thin rules)
+
 gridRule <- function(op) {
     a <- blockValue(op$blocks$op.opparams.a)
     b <- blockValue(op$blocks$op.opparams.b)
     device <- get("device")
     if (a > 0 && b > 0) {
-        a <- minThickness(a, device)
-        b <- minThickness(b, device)
-        x <- unit(fromTeX(get("h")), "native")
-        y <- unit(fromTeX(get("v")), "native")
-        width <- unit(b, "native")
-        height <- unit(a, "native")
-        rectGrob(x, y, width, height, just=c("left", "bottom"),
-                 gp=gpar(col=NA, fill="black"))
+        x <- fromTeX(get("h"))
+        y <- fromTeX(get("v"))
+        width <- fromTeX(b)
+        height <- fromTeX(a)
+        ## Below lwd=1, draw a line
+        if (width < 25.4/72) {
+            segmentsGrob(x + width/2,
+                         y,
+                         x + width/2,
+                         y + height,
+                         default.units="native",
+                         gp=gpar(lwd=72*width/25.4,
+                                 lineend="butt"))
+        } else if (height < 25.4/72) {
+            segmentsGrob(x,
+                         y + height/2,
+                         x + width,
+                         y + height/2,
+                         default.units="native",
+                         gp=gpar(lwd=72*height/25.4,
+                                 lineend="butt"))
+        } else {
+            rectGrob(x, y, width, height, default.units="native",
+                     just=c("left", "bottom"),
+                     gp=gpar(col=NA, fill="black"))
+        }
     } else {
         NULL
     }
