@@ -153,7 +153,7 @@ dvigrid <- function(x, device, scale=1) {
 ################################################################################
 ## User interface
 
-dviGrob <- function(dvi, x, y, default.units, rot, device, gp, name) {
+dviGrob <- function(dvi, ...) {
     UseMethod("dviGrob")
 }
 
@@ -162,7 +162,7 @@ dviGrob.character <- function(dvi,
                               default.units="npc", just="centre",
                               rot=0,
                               device=names(dev.cur()),
-                              name=NULL) {
+                              name=NULL, ...) {
     dviGrob(readDVI(dvi), x, y, default.units, just, rot, device, name)
 }
 
@@ -171,7 +171,7 @@ dviGrob.DVI <- function(dvi,
                         default.units="npc", just="centre",
                         rot=0,
                         device=names(dev.cur()),
-                        name=NULL) {
+                        name=NULL, ...) {
     if (!is.unit(x))
         x <- unit(x, default.units)
     if (!is.unit(y))
@@ -207,6 +207,10 @@ latexGrob <- function(tex,
                       rot=0,
                       device=names(dev.cur()),
                       name=NULL) {
+    haveLaTeX <- nchar(Sys.which("latex"))
+    if (!haveLaTeX) {
+        stop("LaTeX not found")
+    }
     texFile <- tempfile(fileext=".tex")
     dviFile <- gsub("[.]tex", ".dvi", texFile)
     writeLines(c("\\documentclass[12pt]{standalone}",
@@ -236,7 +240,7 @@ fontPaths <- function(x) {
                                 dirname(f$pfb)
                             }
                         })
-        paste(paths[nchar(paths) > 0], collapse=":")
+        paste(unique(paths[nchar(paths) > 0]), collapse=":")
     } else if (grepl("cairo", x$fonts$device)) {
         ""
     } else {

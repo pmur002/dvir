@@ -6,15 +6,15 @@
 
 ## OT1
 ## https://en.wikipedia.org/wiki/OT1_encoding
-generateOT1 <- function() {
-    library(rvest)
-    html <- read_html("https://en.wikipedia.org/wiki/OT1_encoding",
-                      encoding="UTF-8")
-    table1 <- html_nodes(html, "table")[1]
-    cells <- html_nodes(table1, "td")[c(-1, -130)]
-    unicode <- paste0("\\U", substr(html_text(cells), 2, 5))
-    dump("unicode", "")
-}
+## generateOT1 <- function() {
+##     library(rvest)
+##     html <- read_html("https://en.wikipedia.org/wiki/OT1_encoding",
+##                       encoding="UTF-8")
+##     table1 <- html_nodes(html, "table")[1]
+##     cells <- html_nodes(table1, "td")[c(-1, -130)]
+##     unicode <- paste0("\\U", substr(html_text(cells), 2, 5))
+##     dump("unicode", "")
+## }
 
 OT1 <- c("\U0393", "\U0394", "\U0398", "\U039B", "\U039E", "\U03A0", 
          "\U03A3", "\U03A5", "\U03A6", "\U03A8", "\U03A9", "\UFB00", 
@@ -43,15 +43,15 @@ CMR <- OT1
 
 ## OML
 ## https://en.wikipedia.org/wiki/OML_encoding
-generateOML <- function() {
-    library(rvest)
-    html <- read_html("https://en.wikipedia.org/wiki/OML_encoding",
-                      encoding="UTF-8")
-    table1 <- html_nodes(html, "table")[1]
-    cells <- html_nodes(table1, "td")[c(-1, -130)]
-    unicode <- paste0("\\U", substr(html_text(cells), 2, 5))
-    dump("unicode", "")
-}
+## generateOML <- function() {
+##     library(rvest)
+##     html <- read_html("https://en.wikipedia.org/wiki/OML_encoding",
+##                       encoding="UTF-8")
+##     table1 <- html_nodes(html, "table")[1]
+##     cells <- html_nodes(table1, "td")[c(-1, -130)]
+##     unicode <- paste0("\\U", substr(html_text(cells), 2, 5))
+##     dump("unicode", "")
+## }
 
 OML <- c("\U0393", "\U0394", "\U0398", "\U039B", "\U039E", "\U03A0", 
          "\U03A3", "\U03A5", "\U03A6", "\U03A8", "\U03A9", "\U03B1", 
@@ -82,15 +82,15 @@ CMM <- OML
 ## https://en.wikipedia.org/wiki/OMS_encoding
 ## Manual modifications:
 ## TeX 106 "bar" -> UNICODE 007C "vertical line" (instead of 2223 "divides")
-generateOMS <- function() {
-    library(rvest)
-    html <- read_html("https://en.wikipedia.org/wiki/OMS_encoding",
-                      encoding="UTF-8")
-    table1 <- html_nodes(html, "table")[1]
-    cells <- html_nodes(table1, "td")[c(-1, -130)]
-    unicode <- paste0("\\U", substr(html_text(cells), 2, 5))
-    dump("unicode", "")
-}
+## generateOMS <- function() {
+##     library(rvest)
+##     html <- read_html("https://en.wikipedia.org/wiki/OMS_encoding",
+##                       encoding="UTF-8")
+##     table1 <- html_nodes(html, "table")[1]
+##     cells <- html_nodes(table1, "td")[c(-1, -130)]
+##     unicode <- paste0("\\U", substr(html_text(cells), 2, 5))
+##     dump("unicode", "")
+## }
 
 OMS <- c("\U2212", "\U22C5", "\U00D7", "\U2217", "\U00F7", "\U22C4", 
          "\U00B1", "\U2213", "\U2295", "\U2296", "\U2297", "\U2298", 
@@ -123,32 +123,32 @@ CMSY <- OMS
 ## kpsewhich cmex10.afm
 ## /usr/share/texlive/texmf-dist/fonts/afm/public/amsfonts/cm/cmex10.afm
 
-generateCMX <- function() {
-    afm <- readLines("encdata/cmex10.afm")
-    chars <- grep("^C ", afm)
-    names <- lapply(strsplit(afm[chars], " "),
-                    function(x) x[8])
-    cmx <- readLines("encdata/glyphtounicode-cmr.tex")
-    default <- readLines("encdata/glyphtounicode.tex")
-    codepoints <- sapply(names,
-                         function(x) {
-                             pattern <- paste0("pdfglyphtounicode[{]", x, "[}]")
-                             line <- grep(pattern, cmx)
-                             if (length(line)) {
-                                 substr(gsub("^.+[{]", "", cmx[line]), 1, 4)
-                             } else {
-                                 line <- grep(pattern, default)
-                                 if (length(line)) {
-                                     substr(gsub("^.+[{]", "", default[line]),
-                                            1, 4)
-                                 } else {
-                                     NA
-                                 }
-                             }
-                         })
-    unicode <- paste0("\\U", codepoints)
-    dump("unicode", "")
-}
+## generateCMX <- function() {
+##     afm <- readLines("encdata/cmex10.afm")
+##     chars <- grep("^C ", afm)
+##     names <- lapply(strsplit(afm[chars], " "),
+##                     function(x) x[8])
+##     cmx <- readLines("encdata/glyphtounicode-cmr.tex")
+##     default <- readLines("encdata/glyphtounicode.tex")
+##     codepoints <- sapply(names,
+##                          function(x) {
+##                              pattern <- paste0("pdfglyphtounicode[{]", x, "[}]")
+##                              line <- grep(pattern, cmx)
+##                              if (length(line)) {
+##                                  substr(gsub("^.+[{]", "", cmx[line]), 1, 4)
+##                              } else {
+##                                  line <- grep(pattern, default)
+##                                  if (length(line)) {
+##                                      substr(gsub("^.+[{]", "", default[line]),
+##                                             1, 4)
+##                                  } else {
+##                                      NA
+##                                  }
+##                              }
+##                          })
+##     unicode <- paste0("\\U", codepoints)
+##     dump("unicode", "")
+## }
 
 CMX <- c("\U0028", "\U0029", "\U005B", "\U005D", "\U230A", "\U230B", 
          "\U2308", "\U2309", "\U007B", "\U007D", "\U27E8", "\U27E9", 

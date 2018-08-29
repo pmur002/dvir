@@ -61,7 +61,7 @@ initFontConfig <- function() {
     if (!dir.exists("~/.fonts.conf.d/")) {
         dir.create("~/.fonts.conf.d/")
     }
-    config <- xml_new_root(xml_dtd("fontconfig", system="fonts.dtd"))
+    config <- xml_new_root(xml_dtd("fontconfig", system_id="fonts.dtd"))
     xml_add_child(config, "fontconfig")
     xml_add_child(config, xml_comment("include TeX fonts"))
     xml_add_child(config, "dir",

@@ -2,7 +2,14 @@
 import("grid")
 import("hexView")
 importFrom("grDevices",
-           "dev.cur")
+           "dev.cur",
+           "dev.new",
+           "dev.set",
+           "pdf",
+           "pdfFonts",
+           "postscriptFonts",
+           "rgb",
+           "Type1Font")
 importFrom("xml2",
            "write_xml",
            "xml_add_child",
