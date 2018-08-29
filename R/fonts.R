@@ -67,6 +67,7 @@ initFontConfig <- function() {
     xml_add_child(config, "dir",
                   dirname(system("kpsewhich cmr10 --format=.pfb", intern=TRUE)))
     ## Special case cmex10 
+    xml_add_child(config, xml_comment("include custom cmexunicode10 font"))
     xml_add_child(config, "dir", system.file("fonts", package="dvir"))
     ## cat(as.character(fontconfig))
     set("fontconfig", config)

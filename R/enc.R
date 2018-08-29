@@ -181,7 +181,7 @@ CMX <- c("\U0028", "\U0029", "\U005B", "\U005D", "\U230A", "\U230B",
          "\U039B", "\U039E", "\U03A0", "\U03A3", "\U03A5", "\U03A6", 
          "\U03A8", "\U2126")
 
-## Try using re-encoded CMEX10UNICODE (see ./CMEX)
+## Using re-encoded CMEX10UNICODE (see ../inst/fonts/CMEX)
 ## CMEX <- CMX
 CMEX <- CMR
 
@@ -218,7 +218,7 @@ fontEnc <- function(afmFile) {
         names <- c(names, rep(".notdef", pad))
     }
     filebase <- basename(gsub("[.]afm", "", afmFile))
-    encFile <- file.path(getwd(), paste0(filebase, ".enc"))
+    encFile <- file.path(tempdir(), paste0(filebase, ".enc"))
     writeLines(c(paste0("/", basename(filebase), "Encoding ["),
                  paste0("/", names),
                  "]"),
@@ -226,7 +226,7 @@ fontEnc <- function(afmFile) {
     ## NOTE: because we cannot access char zero 
     ##       (cannot have null char in an R string)
     ##       create a separate encoding file just for char zero
-    encFileZero <- file.path(getwd(), paste0(filebase, "Zero.enc"))
+    encFileZero <- file.path(tempdir(), paste0(filebase, "Zero.enc"))
     writeLines(c(paste0("/", basename(filebase), "ZeroEncoding ["),
                  paste0("/", c(".notdef", names[1], rep(".notdef", 254))),
                  "]"),
