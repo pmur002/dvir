@@ -82,7 +82,7 @@ addFontConfig <- function(family, psname) {
         !paste(family, psname) %in% fontcache) {
         fontconfig <- xml_root(get("fontconfig"))
         match <- xml_add_child(fontconfig, "match", target="pattern")
-        test <- xml_add_child(match, "test", name="family", mode="eq")
+        test <- xml_add_child(match, "test", name="family", compare="eq")
         xml_add_child(test, "string", paste(family, psname))
         edit <- xml_add_sibling(test, "edit", name="family",
                                 mode="assign", binding="strong")
