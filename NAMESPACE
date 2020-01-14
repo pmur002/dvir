@@ -26,6 +26,8 @@ export("readDVI",
        "grid.dvi", "dviGrob",
 
        "grid.latex", "latexGrob",
+
+       "latexEngine", "luatexEngine", "xetexEngine",
        
        "fontPaths")
 

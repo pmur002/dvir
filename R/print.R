@@ -1,6 +1,6 @@
 
 for (i in 0:255) {
-    assign(paste0("print_", i), op_ignore)
+    assign(paste0("print_op_", i), op_ignore)
 }
 
 ## set_char_<i>
@@ -16,6 +16,19 @@ print_set_char <- function(op) {
 }
 for (i in 0:127) {
     assign(paste0("print_op_", i), print_set_char)
+}
+
+print_set_longchar <- function(op) {
+    str <- paste0("set_char_",
+                  blockValue(op$blocks$op.opcode),
+                  " ",
+                  rawToChar(op$blocks$op.opparams$fileRaw),
+                  "\n")
+    cat(str)
+}
+
+for (i in 128:131) {
+    assign(paste0("print_op_", i), print_set_longchar)
 }
 
 ## set_rule

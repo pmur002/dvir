@@ -206,7 +206,10 @@ latexGrob <- function(tex,
                       default.units="npc", just="centre",
                       rot=0,
                       device=names(dev.cur()),
-                      name=NULL) {
+                      name=NULL,
+                      preamble=getOption("dvir.preamble"),
+                      postamble=getOption("dvir.postamble"),
+                      engine=latexEngine) {
     haveTinyTeX <- requireNamespace("tinytex", quietly=TRUE)
     if (!haveTinyTeX) {
         haveLaTeX <- nchar(Sys.which("latex"))
@@ -216,15 +219,16 @@ latexGrob <- function(tex,
     }
     texFile <- tempfile(fileext=".tex")
     dviFile <- gsub("[.]tex", ".dvi", texFile)
-    writeLines(c("\\documentclass[12pt]{standalone}",
-                 "\\begin{document}",
+    writeLines(c(preamble,
                  tex,
-                 "\\end{document}"),
+                 postamble),
                texFile)
     if (haveTinyTeX) {
-        tinytex::latexmk(texFile, engine="latex")
+        tinytex::latexmk(texFile, engine=engine$engine,
+                         engine_args=engine$options)
     } else {
-        system(paste0("latex -output-directory=", tempdir(), " ", texFile))
+        system(paste0(engine$engine, " ", engine$options,
+                      " -output-directory=", tempdir(), " ", texFile))
     }
     dvi <- readDVI(dviFile)
     dviGrob(dvi, x, y, default.units, just, rot, device, name)
