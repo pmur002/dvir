@@ -207,9 +207,12 @@ latexGrob <- function(tex,
                       rot=0,
                       device=names(dev.cur()),
                       name=NULL) {
-    haveLaTeX <- nchar(Sys.which("latex"))
-    if (!haveLaTeX) {
-        stop("LaTeX not found")
+    haveTinyTeX <- requireNamespace("tinytex", quietly=TRUE)
+    if (!haveTinyTeX) {
+        haveLaTeX <- nchar(Sys.which("latex"))
+        if (!haveLaTeX) {
+            stop("LaTeX not found")
+        }
     }
     texFile <- tempfile(fileext=".tex")
     dviFile <- gsub("[.]tex", ".dvi", texFile)
@@ -218,7 +221,11 @@ latexGrob <- function(tex,
                  tex,
                  "\\end{document}"),
                texFile)
-    system(paste0("latex -output-directory=", tempdir(), " ", texFile))
+    if (haveTinyTeX) {
+        tinytex::latexmk(texFile, engine="latex")
+    } else {
+        system(paste0("latex -output-directory=", tempdir(), " ", texFile))
+    }
     dvi <- readDVI(dviFile)
     dviGrob(dvi, x, y, default.units, just, rot, device, name)
 }

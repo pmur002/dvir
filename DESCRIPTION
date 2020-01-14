@@ -1,12 +1,13 @@
 Package: dvir
 Type: Package
 Title: Render DVI Files
-Version: 0.1-2
+Version: 0.2-0
 Author: Paul Murrell
 Maintainer: Paul Murrell <paul@stat.auckland.ac.nz>
 Description: Functions to read DVI files, as produced from TeX documents,
              and render them within R.
 Depends: grid
+Suggests: tinytex
 SystemRequirements: A TeX distribution such as TeX Live
 Imports: grDevices, hexView (>= 0.3-4), xml2, gdtools (> 0.1.7.9000)
 Collate: globals.R convert.R device.R read.R ops.R print.R fonts.R enc.R metric.R grid.R zzz.R
