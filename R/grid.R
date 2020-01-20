@@ -9,6 +9,11 @@ for (i in 0:127) {
     assign(paste0("grid_op_", i), op_set_char)
 }
 
+grid_op_128 <- op_set
+grid_op_129 <- op_set
+grid_op_130 <- op_set
+grid_op_131 <- op_set
+
 ## set_rule
 ## NOTE that we need to do a "rule_pixels" calculation here
 ## http://ftp.cs.stanford.edu/tex/dist/texware/dvitype.web

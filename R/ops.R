@@ -58,7 +58,39 @@ op_set_char <- function(op) {
                            cex=get("scale")))
     ## grobWidth() works with text font size, NOT text location (x, y)
     ## so "native" for (x, y) should be ok
-    set("h", get("h") + charWidth(op, fonts, f))
+    set("h", get("h") + charWidth(op$blocks$op.opcode$fileRaw, fonts, f))
+    debugline("char")
+    ## Return text grob
+    tg
+}
+
+## set<i>
+op_set <- function(op) {
+    debugmove()
+    x <- unit(fromTeX(get("h")), "native")
+    y <- unit(fromTeX(get("v")), "native")
+    fonts <- get("fonts")
+    f <- get("f")
+    char <- getChar(op$blocks$op.opparams$fileRaw,
+                    fonts[[f]]$postscriptname,
+                    get("device"))
+    family <- fontFamily(fonts[[f]], char, get("device"))
+    ## "native" rather than "mm" because the grobs will be drawn
+    ## within a viewport with scales based on "mm" dimensions of
+    ## the entire DVI
+    tg <- textGrob(char, x, y, just=c("left", "bottom"),
+                   gp=gpar(fontfamily=family,
+                           fontsize=fonts[[f]]$size,
+                           ## TODO
+                           ## Simply scaling text up like this is NOT
+                           ## right because it does not respect the
+                           ## font *design size*
+                           ## (see http://makingtexwork.sourceforge.net/mtw/ch05.html
+                           ##  section "The Issue of Size")
+                           cex=get("scale")))
+    ## grobWidth() works with text font size, NOT text location (x, y)
+    ## so "native" for (x, y) should be ok
+    set("h", get("h") + charWidth(op$blocks$op.opparams$fileRaw, fonts, f))
     debugline("char")
     ## Return text grob
     tg

@@ -53,6 +53,36 @@ for (i in 0:127) {
     assign(paste0("metric_info_", i), metric_set_char)
 }
 
+## set_char_<i>
+metric_set <- function(op) {
+    ## Check position BEFORE char
+    updateHoriz(get("h"))
+    ## Move to end of char and check position again
+    tg <- op_set(op)
+    updateHoriz(get("h"))
+    ## REMEMBER that v measures DOWN
+    ## ALSO, v is a baseline for text
+    v <- get("v")
+    baseline <- get("baseline")
+    if (!is.finite(baseline) || v > baseline) {
+        set("baseline", v)
+    }
+    a <- ytoTeX(grobAscent(tg))
+    d <- ytoTeX(grobDescent(tg))
+    top <- get("top")
+    if (!is.finite(top) || v - a < top) {
+        set("top", v - a)
+    }
+    bottom <- get("bottom")
+    if (!is.finite(bottom) || v + d > bottom) {
+        set("bottom", v + d)
+    } 
+}
+metric_info_128 <- metric_set
+metric_info_129 <- metric_set
+metric_info_130 <- metric_set
+metric_info_131 <- metric_set
+
 ## set_rule
 metric_info_132 <- function(op) {
     ## (h, v) is bottom-left
@@ -201,8 +231,8 @@ initCharMetric <- function() {
     set("metricPDF", dev.cur())
 }
 
-charWidth <- function(op, fonts, f) {
-    char <- getChar(op$blocks$op.opcode$fileRaw,
+charWidth <- function(raw, fonts, f) {
+    char <- getChar(raw,
                     fonts[[f]]$postscriptname,
                     "pdf")
     family <- fontFamily(fonts[[f]], char, "pdf")
