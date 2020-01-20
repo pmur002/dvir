@@ -10,5 +10,5 @@ Depends: grid
 Suggests: tinytex
 SystemRequirements: A TeX distribution such as TeX Live
 Imports: grDevices, hexView (>= 0.3-4), xml2, gdtools (> 0.1.7.9000)
-Collate: globals.R convert.R device.R engine.R read.R ops.R print.R fonts.R enc.R metric.R grid.R zzz.R
+Collate: globals.R convert.R device.R ops.R fonts.R enc.R metric.R luatex.R engine.R read.R print.R grid.R zzz.R
 License: GPL-3

@@ -177,14 +177,14 @@ op_fnt_num <- function(op) {
 op_font_def <- function(op) {
     fontname <- paste(blockValue(op$blocks$op.opparams.fontname.name),
                       collapse="")
-    fontdef <- defineFont(fontname, get("device"))
+    engine <- get("engine")
+    fontdef <- engine$fontDef(fontname, get("device"))
     fontnum <- blockValue(op$blocks$op.opparams.k) + 1
     scale <- blockValue(op$blocks$op.opparams.s)
     design <- blockValue(op$blocks$op.opparams.d)
     mag <- get("mag")
     fonts <- get("fonts")
-    fonts[[fontnum]] <- c(list(name=fontname),
-                              fontdef)
+    fonts[[fontnum]] <- fontdef
     fonts[[fontnum]]$size <- fontdef$size*mag*scale/(1000*design)
     set("fonts", fonts)
 }

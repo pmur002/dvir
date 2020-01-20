@@ -168,8 +168,9 @@ readMetricInfo <- function(op) {
     base::get(paste0("metric_info_", opcode))(op)
 }
 
-dviMetric <- function(x, device, scale=1, TeX=FALSE) {
+dviMetric <- function(x, device, engine, scale=1, TeX=FALSE) {
     set("device", device)
+    set("engine", engine)
     set("scale", scale)
     invisible(lapply(x, readMetricInfo))
     info <- list(top=get("top"),

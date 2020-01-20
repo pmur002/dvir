@@ -144,8 +144,9 @@ op2grid <- function(op) {
     base::get(paste0("grid_op_", opcode))(op)
 }
 
-dvigrid <- function(x, device, scale=1) {
+dvigrid <- function(x, device, engine, scale=1) {
     set("device", device)
+    set("engine", engine)
     set("scale", scale)
     invisible(lapply(x, op2grid))
 }
@@ -171,7 +172,9 @@ dviGrob.DVI <- function(dvi,
                         default.units="npc", just="centre",
                         rot=0,
                         device=names(dev.cur()),
-                        name=NULL, ...) {
+                        name=NULL,
+                        engine=latexEngine,
+                        ...) {
     if (!is.unit(x))
         x <- unit(x, default.units)
     if (!is.unit(y))
@@ -180,8 +183,8 @@ dviGrob.DVI <- function(dvi,
         dev.new()
         device <- names(dev.cur())
     }
-    fonts <- dviFonts(dvi, device)
-    metrics <- dviMetric(dvi, device)
+    fonts <- dviFonts(dvi, device, engine)
+    metrics <- dviMetric(dvi, device, engine)
     vp <- viewport(x, y,
                    width=unit(metrics$right - metrics$left, "mm"),
                    ## Down is positive in DVI
@@ -190,7 +193,7 @@ dviGrob.DVI <- function(dvi,
                    xscale=c(metrics$left, metrics$right),
                    yscale=c(metrics$bottom, metrics$top),
                    name="dvi.vp")
-    grobs <- dvigrid(dvi, device)
+    grobs <- dvigrid(dvi, device, engine)
     children <- do.call(gList, grobs[sapply(grobs, is.grob)])
     gTree(children=children, fonts=fonts, vp=vp, name=name, cl="DVIgrob")
 }
@@ -209,8 +212,9 @@ latexGrob <- function(tex,
                       name=NULL,
                       preamble=getOption("dvir.preamble"),
                       postamble=getOption("dvir.postamble"),
-                      engine=latexEngine) {
-    haveTinyTeX <- requireNamespace("tinytex", quietly=TRUE)
+                      engine=latexEngine,
+                      tinytex=TRUE) {
+    haveTinyTeX <- tinytex && requireNamespace("tinytex", quietly=TRUE)
     if (!haveTinyTeX) {
         haveLaTeX <- nchar(Sys.which("latex"))
         if (!haveLaTeX) {
@@ -231,7 +235,7 @@ latexGrob <- function(tex,
                       " -output-directory=", tempdir(), " ", texFile))
     }
     dvi <- readDVI(dviFile)
-    dviGrob(dvi, x, y, default.units, just, rot, device, name)
+    dviGrob(dvi, x, y, default.units, just, rot, device, name, engine)
 }
     
 grid.latex <- function(...) {

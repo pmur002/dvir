@@ -21,12 +21,13 @@ readFontInfo <- function(op) {
     base::get(paste0("font_info_", opcode))(op)
 }
 
-dviFonts <- function(x, device) {
+dviFonts <- function(x, device, engine) {
     UseMethod("dviFonts")
 }
 
-dviFonts.DVI <- function(x, device) {
+dviFonts.DVI <- function(x, device, engine) {
     set("device", device)
+    set("engine", engine)
     invisible(lapply(x, readFontInfo))
     info <- list(fonts=get("fonts"),
                  device=device)
@@ -34,8 +35,8 @@ dviFonts.DVI <- function(x, device) {
     info
 }
 
-dviFonts.character <- function(x, device) {
-    dviFonts(readDVI(x), device)
+dviFonts.character <- function(x, device, engine) {
+    dviFonts(readDVI(x), device, engine)
 }
 
 ################################################################################
@@ -170,7 +171,8 @@ definePostScriptFont <- function(fontname) {
         names(args) <- fontnameZero
         do.call(postscriptFonts, args)
     }
-    list(afm=afmFile, pfb=pfbFile,
+    list(name=fontname,
+         afm=afmFile, pfb=pfbFile,
          postscriptname=fullname,
          size=fontSize(fullname))
 }
@@ -204,7 +206,8 @@ definePDFFont <- function(fontname) {
         names(args) <- fontnameZero
         do.call(pdfFonts, args)
     }
-    list(afm=afmFile, pfb=pfbFile,
+    list(name=fontname,
+         afm=afmFile, pfb=pfbFile,
          postscriptname=fullname,
          size=fontSize(fullname))
 }
@@ -219,12 +222,7 @@ defineCairoFont <- function(fontname) {
     }
     familyname <- paste(strsplit(afm[grep("^FamilyName", afm)], " ")[[1]][-1],
                         collapse=" ")
-    ## These now taken from definePDFFont() result
-    ## fullname <- paste(strsplit(afm[grep("^FullName", afm)], " ")[[1]][-1],
-    ##                   collapse=" ")
     list(family=familyname)
-         ## postscriptname=fullname,
-         ## size=fontSize(fullname))
 }
 
 defineFont <- function(fontname, device) {
@@ -239,7 +237,9 @@ defineFont <- function(fontname, device) {
     } else {
         ## TODO
         ## Other devices 
+        stop("Graphics device unsupported")
     }
+    defn
 }
 
 fontFamily <- function(font, char, device) {
@@ -249,7 +249,6 @@ fontFamily <- function(font, char, device) {
         } else {
             font$name
         }
-    ## NOTE that png(type="Xlib") has name "PNG" (all caps), etc
     } else if (cairoDevice(device)) {
         addFontConfig(font$family, font$postscriptname)
         paste(font$family, font$postscriptname)

@@ -1,12 +1,12 @@
 
-engine <- function(engine, options="") {
-    engine <- list(engine=engine, options=options)
+engine <- function(engine, options="", fontDef=defineFont) {
+    engine <- list(engine=engine, options=options, fontDef=fontDef)
     class(engine) <- "DVIRengine"
     engine
 }
 
-latexEngine <- engine("latex")
+texEngine <- engine("latex")
 
 xetexEngine <- engine("xelatex", "-no-pdf")
 
-luatexEngine <- engine("lualatex", "--output-format=dvi")
+luatexEngine <- engine("lualatex", "--output-format=dvi", luaDefineFont)
