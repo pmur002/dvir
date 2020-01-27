@@ -39,10 +39,12 @@ op_set_char <- function(op) {
     y <- unit(fromTeX(get("v")), "native")
     fonts <- get("fonts")
     f <- get("f")
-    char <- getChar(op$blocks$op.opcode$fileRaw,
-                    fonts[[f]]$postscriptname,
-                    get("device"))
-    family <- fontFamily(fonts[[f]], char, get("device"))
+    device <- get("device")
+    engine <- get("engine")
+    char <- engine$charEnc(op$blocks$op.opcode$fileRaw,
+                           fonts[[f]]$postscriptname,
+                           device)
+    family <- fontFamily(fonts[[f]], char, device)
     ## "native" rather than "mm" because the grobs will be drawn
     ## within a viewport with scales based on "mm" dimensions of
     ## the entire DVI
@@ -56,9 +58,8 @@ op_set_char <- function(op) {
                            ## (see http://makingtexwork.sourceforge.net/mtw/ch05.html
                            ##  section "The Issue of Size")
                            cex=get("scale")))
-    ## grobWidth() works with text font size, NOT text location (x, y)
-    ## so "native" for (x, y) should be ok
-    set("h", get("h") + charWidth(op$blocks$op.opcode$fileRaw, fonts, f))
+    set("h",
+        get("h") + engine$charMetric(op$blocks$op.opcode$fileRaw, fonts, f))
     debugline("char")
     ## Return text grob
     tg
@@ -71,10 +72,12 @@ op_set <- function(op) {
     y <- unit(fromTeX(get("v")), "native")
     fonts <- get("fonts")
     f <- get("f")
-    char <- getChar(op$blocks$op.opparams$fileRaw,
-                    fonts[[f]]$postscriptname,
-                    get("device"))
-    family <- fontFamily(fonts[[f]], char, get("device"))
+    device <- get("device")
+    engine <- get("engine")
+    char <- engine$charEnc(op$blocks$op.opparams$fileRaw,
+                           fonts[[f]]$postscriptname,
+                           device)
+    family <- fontFamily(fonts[[f]], char, device)
     ## "native" rather than "mm" because the grobs will be drawn
     ## within a viewport with scales based on "mm" dimensions of
     ## the entire DVI
@@ -88,9 +91,8 @@ op_set <- function(op) {
                            ## (see http://makingtexwork.sourceforge.net/mtw/ch05.html
                            ##  section "The Issue of Size")
                            cex=get("scale")))
-    ## grobWidth() works with text font size, NOT text location (x, y)
-    ## so "native" for (x, y) should be ok
-    set("h", get("h") + charWidth(op$blocks$op.opparams$fileRaw, fonts, f))
+    set("h",
+        get("h") + engine$charMetric(op$blocks$op.opparams$fileRaw, fonts, f))
     debugline("char")
     ## Return text grob
     tg

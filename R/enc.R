@@ -249,5 +249,7 @@ getChar <- function(raw, fontname, device) {
         }
     } else if (cairoDevice(device)) {
         rawToUTF8(raw, fontname)
+    } else {
+        stop("Graphics device unsupported")
     }
 }
