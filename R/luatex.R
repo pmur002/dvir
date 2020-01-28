@@ -254,7 +254,7 @@ fontNameGen <- function() {
     index <- 0
     function() {
         index <<- index + 1
-        paste0("dvir-font-", index)
+        paste0("dvir_font_", index)
     }
 }
 dvirFontName <- fontNameGen()
@@ -308,15 +308,19 @@ rewrapFont <- function(ttxfile, fontname, suffix) {
 
 set("fontCache", list())
 
+fontID <- function(fontfile, charIndex) {
+    paste0(fontfile, "-non-UNICODE-glyph-", charIndex)
+}
+
 cacheFont <- function(fontfile, charIndex, subsetName) {
     cache <- get("fontCache")
-    cache[[paste0(fontfile, charIndex)]] <- subsetName
+    cache[[fontID(fontfile, charIndex)]] <- subsetName
     set("fontCache", cache)
 }
 
 fontFromCache <- function(fontfile, charIndex) {
     cache <- get("fontCache")
-    cache[[paste0(fontfile, charIndex)]]
+    cache[[fontID(fontfile, charIndex)]]
 }    
 
 subsetFont <- function(fontfile, charIndex) {
