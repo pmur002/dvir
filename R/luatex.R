@@ -170,11 +170,184 @@ luaGetChar <- function(raw, fontname, device) {
                ## Two bytes is assumed to be UTF16BE from set2 op
                iconv(rawToChar(raw), from="UTF16BE", to="UTF-8"),
                ## Three bytes is assumed to be non-UNICODE char from set3 op
-               ## Much work to do here!
-               stop("set3 not yet supported"),
+               ## First byte is 0x0F
+               ## Second two bytes are integer index into non-UNICODE glyphs
+               nonUNICODEchar(as.numeric(as.hexmode(paste(raw[2:3], collapse=""))),
+                              fontname),
                ## Have not yet witnessed set4 op
                stop("set4 not yet supported"))
     } else {
         stop("Graphics device unsupported")
     }
+}
+
+#########################
+## Code to support set3 op
+## (3-byte 0Fxxxx, where xxxx is an integer index to the ith
+##  non-UNICODE glyph within the font)
+## (e.g., ti ligature, which has no UNICODE code point)
+
+## TODO:
+## ONLY tested on a single TrueType font (Lato-Light.ttf) so far
+
+getFont <- function(fontfile) {
+    tmpFontDir <- initFontDir()
+    filename <- basename(fontfile)
+    fontsuffix <- "[.](ttf|otf)$"
+    if (!grepl(fontsuffix, filename))
+        warning("Unrecognised font suffix")
+    filesuffix <- gsub(paste0(".+", fontsuffix), "\\1", filename)
+    filestub <- gsub(fontsuffix, "", filename)
+    file.copy(fontfile, tmpFontDir)
+    fontfile <- file.path(tmpFontDir, filename)
+    subfontfile <- file.path(tmpFontDir,
+                             paste0(filestub, "-subset.", filesuffix))
+    list(font=filestub,
+         file=fontfile,
+         suffix=filesuffix,
+         subfile=subfontfile)
+}
+
+## Get glyph number of ith non-UNICODE glyph from TTX
+getGlyph <- function(fontfile, suffix, index) {
+    ttxfile <- gsub(paste0("[.]", suffix, "$"), "-GlyphOrder.ttx", fontfile)
+    if (file.exists(ttxfile))
+        unlink(ttxfile)
+    system(paste0("ttx -t GlyphOrder -o ",
+                  ttxfile,
+                  " ",
+                  fontfile))
+    glyphs <- read_xml(ttxfile)
+    all <- xml_text(xml_find_all(glyphs, "//GlyphID/@name"))
+    notUNICODE <- grep("^glyph", all)
+    ## The first '- 1' is for zero-based glyph numbering
+    ## The second '- 1' is an off-by-one adjustment
+    ## (maybe LuaTeX does not count the .notdef char?)
+    glyphNum <- (seq_along(all) - 1)[notUNICODE[index - 1]]
+    list(index=glyphNum,
+         name=all[glyphNum])
+}
+
+## Use 'pyftsubset' to subset a single glyph from a font (into a new font)
+extractGlyph <- function(fontfile, glyphNum, subfontfile) {
+    system(paste0("pyftsubset ",
+                  fontfile,
+                  " --gids=",
+                  glyphNum,
+                  " --output-file=",
+                  subfontfile,
+                  ## Retain name tables
+                  " --name-IDs='*'"))
+}
+
+## Use 'ttx' to convert .ttf to .ttx
+unwrapFont <- function(fontfile, suffix) {
+    ttxfile <- gsub(paste0(suffix, "$"), "ttx", fontfile)
+    if (file.exists(ttxfile))
+        unlink(ttxfile)
+    system(paste0("ttx ", fontfile))
+    ttxfile
+}
+
+## Generate a temporary font name
+fontNameGen <- function() {
+    index <- 0
+    function() {
+        index <<- index + 1
+        paste0("dvir-font-", index)
+    }
+}
+dvirFontName <- fontNameGen()
+
+## Modify TTX file to set <name> and <cmap> elements
+editTTX <- function(ttxfile, fontname) {
+    ttx <- read_xml(ttxfile)
+    ## Replace <name> element
+    name <- xml_find_first(ttx, "/ttFont/name")
+    newName <- read_xml("<name/>")
+    nameElements <- xml_children(name)
+    familyname <- xml_find_first(name, "namerecord[@nameID = '1']")
+    xml_set_text(familyname, fontname)
+    subfamilyname <- xml_find_first(name, "namerecord[@nameID = '2']")
+    fullname <- xml_find_first(name, "namerecord[@nameID = '4']")
+    xml_set_text(fullname, paste(fontname, xml_text(subfamilyname)))
+    psname <- xml_find_first(name, "namerecord[@nameID = '6']")
+    xml_set_text(psname, fontname)
+    xml_add_child(newName, familyname)
+    xml_add_child(newName, subfamilyname)
+    xml_add_child(newName, fullname)
+    xml_add_child(newName, psname)
+    xml_replace(name, newName)
+    ## Find the name of the second-to-last glyph
+    ## (this is the glyph that was extracted from the full font)
+    glyphs <- xml_find_all(ttx, "//GlyphID")
+    glyphName <- xml_attr(glyphs[length(glyphs) - 1], "name")
+    ## Add to <cmap> element
+    cmap <- xml_find_first(ttx, "/ttFont/cmap")
+    cmapTable <-
+        read_xml('<cmap_format_4 platformID="0" platEncID="3" language="0"/>')
+    xml_add_child(cmapTable, "map", code="0x41", name=glyphName)
+    xml_add_child(cmap, cmapTable)
+    editedttxfile <- gsub("[.]ttx$", paste0("-edited.ttx"), ttxfile)
+    write_xml(ttx, editedttxfile)
+    editedttxfile
+}
+
+rewrapFont <- function(ttxfile, fontname, suffix) {
+    tmpFontDir <- initFontDir()
+    fontfile <- file.path(tmpFontDir, paste0(fontname, ".", suffix))
+    if (file.exists(fontfile))
+        unlink(fontfile)
+    system(paste0("ttx -o ",
+                  fontfile,
+                  " ",
+                  ttxfile))
+    list(name=fontname,
+         file=fontfile)
+}
+
+set("fontCache", list())
+
+cacheFont <- function(fontfile, charIndex, subsetName) {
+    cache <- get("fontCache")
+    cache[[paste0(fontfile, charIndex)]] <- subsetName
+    set("fontCache", cache)
+}
+
+fontFromCache <- function(fontfile, charIndex) {
+    cache <- get("fontCache")
+    cache[[paste0(fontfile, charIndex)]]
+}    
+
+subsetFont <- function(fontfile, charIndex) {
+    cachedFont <- fontFromCache(fontfile, charIndex)
+    if (is.null(cachedFont)) {
+        fontInfo <- getFont(fontfile)
+        glyphInfo <- getGlyph(fontInfo$file, fontInfo$suffix, charIndex)
+        extractGlyph(fontInfo$file, glyphInfo$index, fontInfo$subfile)
+        ttxfile <- unwrapFont(fontInfo$subfile, fontInfo$suffix)
+        subsetName <- dvirFontName()
+        subsetTTX <- editTTX(ttxfile, subsetName)
+        rewrapFont(subsetTTX, subsetName, fontInfo$suffix)
+        cacheFont(fontfile, charIndex, subsetName)
+    } else {
+        subsetName <- cachedFont
+    }
+    list(family=subsetName,
+         postscriptname=subsetName)
+}
+
+findFontFile <- function(fontname) {
+    result <- system(paste0("luaotfload-tool --find='", fontname, "'"),
+                     intern=TRUE)
+    gsub('[^"]+ "|"$', "", result[2])
+}
+
+nonUNICODEchar <- function(index, fontname) {
+    fontfile <- findFontFile(fontname)
+    customFont <- subsetFont(fontfile, index)
+    char <- "A"
+    attr(char, "family") <- customFont$family
+    attr(char, "postscriptname") <- customFont$postscriptname
+    char
 }

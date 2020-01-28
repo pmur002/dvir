@@ -54,6 +54,15 @@ dviFonts.character <- function(x, device, engine) {
 ## will be matched with a font that has a postscriptname property
 ## equal to the FullName that we extracted from the AFM file.
 
+initFontDir <- function() {
+    fontDir <- "LuaTeXFonts"
+    tmpFontDir <- file.path(tempdir(), fontDir)
+    if (!dir.exists(tmpFontDir)) {
+        dir.create(tmpFontDir)
+    }
+    tmpFontDir
+}
+
 initFontConfig <- function() {
     tmpdir <- file.path(tempdir(), "dvir")
     dir.create(tmpdir)
@@ -70,6 +79,10 @@ initFontConfig <- function() {
     ## Special case cmex10 
     xml_add_child(config, xml_comment("include custom cmexunicode10 font"))
     xml_add_child(config, "dir", system.file("fonts", package="dvir"))
+    ## Include 'dvir' custom fonts
+    fontDir <- initFontDir()
+    xml_add_child(config, xml_comment("include custom 'dvir' fonts"))
+    xml_add_child(config, "dir", fontDir)
     ## cat(as.character(fontconfig))
     set("fontconfig", config)
     write_xml(config, configFile)
@@ -250,8 +263,16 @@ fontFamily <- function(font, char, device) {
             font$name
         }
     } else if (cairoDevice(device)) {
-        addFontConfig(font$family, font$postscriptname)
-        paste(font$family, font$postscriptname)
+        ## Allow for special font per char
+        if (!is.null(attr(char, "family"))) {
+            family <- attr(char, "family")
+            psname <- attr(char, "postscriptname")
+        } else {
+            family <- font$family
+            psname <- font$postscriptname
+        }
+        addFontConfig(family, psname)
+        paste(family, psname)
     }
 }
 
