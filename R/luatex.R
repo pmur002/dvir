@@ -281,7 +281,17 @@ editTTX <- function(ttxfile, fontname) {
     ## Find the name of the second-to-last glyph
     ## (this is the glyph that was extracted from the full font)
     glyphs <- xml_find_all(ttx, "//GlyphID")
-    glyphName <- xml_attr(glyphs[length(glyphs) - 1], "name")
+    numGlyphs <- length(glyphs)
+    ## Subset always seems to include .notdef
+    if (numGlyphs == 2) {
+        ## Sometimes the result will only add the requested glyph
+        glyphName <- xml_attr(glyphs[numGlyphs], "name")
+    } else {
+        ## Sometimes (e.g., the glyph is constructed from other glyphs
+        ## in the font), several glyphs will be added, with a blank
+        ## glyph on the end and the requested glyph just before that
+        glyphName <- xml_attr(glyphs[numGlyphs - 1], "name")
+    }
     ## Add to <cmap> element
     cmap <- xml_find_first(ttx, "/ttFont/cmap")
     cmapTable <-
