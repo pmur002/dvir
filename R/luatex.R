@@ -141,9 +141,16 @@ luaGetChar <- function(raw, fontname, device) {
         nbytes <- length(raw)
         switch(nbytes,
                ## Single byte is either set_char_i or set1 op
-               rawToUTF8(raw, fontname),
+               if (as.numeric(raw) < 128) {
+                   rawToUTF8(raw, fontname)
+               } else {
+                   ## Single byte is assumed to be UTF16BE 
+                   ## (first byte assumed 0) from set1 op
+                   iconv(list(c(as.raw(0), raw)),
+                         from="UTF16BE", to="UTF-8")
+               },
                ## Two bytes is assumed to be UTF16BE from set2 op
-               iconv(rawToChar(raw), from="UTF16BE", to="UTF-8"),
+               iconv(list(raw), from="UTF16BE", to="UTF-8"),
                ## Three bytes is assumed to be non-UNICODE char from set3 op
                ## First byte is 0x0F
                ## Second two bytes are integer index into non-UNICODE glyphs
