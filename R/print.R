@@ -21,8 +21,8 @@ for (i in 0:127) {
 print_set_longchar <- function(op) {
     str <- paste0("set_char",
                   blockValue(op$blocks$op.opcode) - 127,
-                  "     ",
-                  op$blocks$op.opparams$fileRaw,
+                  "    ",
+                  paste(op$blocks$op.opparams$fileRaw, collapse=" "),
                   "\n")
     cat(str)
 }
