@@ -360,7 +360,6 @@ editTTX <- function(ttxfile, fontname) {
     ## Replace <name> element
     name <- xml_find_first(ttx, "/ttFont/name")
     newName <- read_xml("<name/>")
-    nameElements <- xml_children(name)
     familyname <- xml_find_first(name, "namerecord[@nameID = '1']")
     xml_set_text(familyname, fontname)
     subfamilyname <- xml_find_first(name, "namerecord[@nameID = '2']")
