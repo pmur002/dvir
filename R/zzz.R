@@ -3,6 +3,8 @@
     initFontMap()
     initFontConfig()
     initCharMetric()
+    initLuaOTFcache()
+    initTTXcache()
 
     options(dvir.preamble=paste(c("\\documentclass[12pt]{standalone}",
                                   "\\begin{document}"),

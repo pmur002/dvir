@@ -239,7 +239,7 @@ widthFromGlyphName <- function(name, hmtx) {
 ## Calculate character width from TTX font metrics
 ttxCharWidth <- function(raw, fontname, device, fontsize=10, cex=1) {
     tmpFontDir <- initFontDir()
-    originalfontfile <- findFontFile(fontname)
+    originalfontfile <- getFontFile(fontname)
     filename <- basename(originalfontfile)
     fontsuffix <- "[.](ttf|otf)$"
     if (!grepl(fontsuffix, filename))
@@ -255,7 +255,7 @@ ttxCharWidth <- function(raw, fontname, device, fontsize=10, cex=1) {
     if (!file.exists(headTTXfile)) {
         system(paste0("ttx -t head -o ", headTTXfile, " ", fontfile))
     }
-    headTTX <- read_xml(headTTXfile)
+    headTTX <- getTTX(headTTXfile)
     unitsPerEm <- as.numeric(xml_text(xml_find_first(headTTX,
                                                      "//unitsPerEm/@value")))
     ## Convert char num to glyph name
@@ -265,7 +265,7 @@ ttxCharWidth <- function(raw, fontname, device, fontsize=10, cex=1) {
     if (!file.exists(hmtxTTXfile)) {
         system(paste0("ttx -t hmtx -o ", hmtxTTXfile, " ", fontfile))
     }
-    hmtxTTX <- read_xml(hmtxTTXfile)
+    hmtxTTX <- getTTX(hmtxTTXfile)
     width <- widthFromGlyphName(glyphName, hmtxTTX)
     ## round() to get whole number metrix (at 1000 scale)
     ## floor() to match what PDF_StrWidthUTF8() does
@@ -312,7 +312,7 @@ getGlyph <- function(fontfile, suffix, index) {
                       " ",
                       fontfile))
     }
-    glyphs <- read_xml(ttxfile)
+    glyphs <- getTTX(ttxfile)
     all <- xml_text(xml_find_all(glyphs, "//GlyphID/@name"))
     notUNICODE <- grep("^glyph", all)
     ## The first '- 1' is for zero-based glyph numbering
@@ -410,20 +410,20 @@ rewrapFont <- function(ttxfile, fontname, suffix) {
          file=fontfile)
 }
 
-set("fontCache", list())
+set("luaFontCache", list())
 
 fontID <- function(fontfile, charIndex) {
     paste0(fontfile, "-non-UNICODE-glyph-", charIndex)
 }
 
 cacheFont <- function(fontfile, charIndex, subsetName) {
-    cache <- get("fontCache")
+    cache <- get("luaFontCache")
     cache[[fontID(fontfile, charIndex)]] <- subsetName
-    set("fontCache", cache)
+    set("luaFontCache", cache)
 }
 
 fontFromCache <- function(fontfile, charIndex) {
-    cache <- get("fontCache")
+    cache <- get("luaFontCache")
     cache[[fontID(fontfile, charIndex)]]
 }    
 
@@ -452,10 +452,59 @@ findFontFile <- function(fontname) {
 }
 
 nonUNICODEchar <- function(index, fontname) {
-    fontfile <- findFontFile(fontname)
+    fontfile <- getFontFile(fontname)
     customFont <- subsetFont(fontfile, index)
     char <- "A"
     attr(char, "family") <- customFont$family
     attr(char, "postscriptname") <- customFont$postscriptname
     char
+}
+
+#########################
+## Luaotf cache (to avoid calling luaotfload-tool over and over again)
+initLuaOTFcache <- function() {
+    set("luaOTFcache", list())
+}
+
+cacheLuaOTF <- function(fontname, fontfile) {
+    cache <- get("luaOTFcache")
+    cache[[fontname]] <- fontfile
+    set("luaOTFcache", cache)
+}
+
+getFontFile <- function(fontname) {
+    cache <- get("luaOTFcache")
+    if (is.null(cache) ||
+        is.null(cache[[fontname]])) {
+        fontfile <- findFontFile(fontname)
+        cacheLuaOTF(fontname, fontfile)        
+    } else {
+        fontfile <- cache[[fontname]]
+    }
+    fontfile
+}
+
+#########################
+## TTX cache (to avoid loading TTX files over and over again)
+
+initTTXcache <- function() {
+    set("ttxCache", list())
+}
+
+cacheTTX <- function(ttxFile, ttx) {
+    cache <- get("ttxCache")
+    cache[[ttxFile]] <- ttx
+    set("ttxCache", cache)
+}
+
+getTTX <- function(ttxFile) {
+    cache <- get("ttxCache")
+    if (is.null(cache) ||
+        is.null(cache[[ttxFile]])) {
+        ttx <- read_xml(ttxFile)
+        cacheTTX(ttxFile, ttx)        
+    } else {
+        ttx <- cache[[ttxFile]]
+    }
+    ttx
 }
