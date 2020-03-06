@@ -28,10 +28,10 @@ luaFontInfo <- function(fontname) {
     } else {
         stop("Lua font not found on system")
     }
-    fontdb <- extrafont::fonttable()
+    fontdb <- fonttable()
     dbline <- grep(fontFile, fontdb$fontfile)
     if (length(dbline) == 0) {
-        stop("Lua font not registered with 'extrafont'")
+        stop("Lua font not registered with 'extrafont'; run extrafont::font_import() and try again")
     }
     ## If more than one line matches, use first one
     fontdb[dbline[1], ]
@@ -201,7 +201,7 @@ getGlyphName <- function(raw, fontname, device, fontfile, filesuffix) {
                        ## First byte is 0x0F
                        ## Second two bytes are integer index into
                        ##   non-UNICODE glyphs
-                       getGlyph(fontfile, filesuffix,
+                       getGlyph(getGlyphs(fontfile, filesuffix), 
                                 as.numeric(as.hexmode(paste(raw[2:3],
                                                             collapse=""))))$name,
                        ## Have not yet witnessed set4 op
@@ -303,16 +303,16 @@ getFont <- function(originalfontfile, charIndex) {
          subfile=subfontfile)
 }
 
-## Get glyph number of ith non-UNICODE glyph from TTX
-getGlyph <- function(fontfile, suffix, index) {
+getGlyphs <- function(fontfile, suffix) {
     ttxfile <- gsub(paste0("[.]", suffix, "$"), "-GlyphOrder.ttx", fontfile)
     if (!file.exists(ttxfile)) {
-        system(paste0("ttx -t GlyphOrder -o ",
-                      ttxfile,
-                      " ",
-                      fontfile))
+        system(paste0("ttx -t GlyphOrder -o ", ttxfile, " ", fontfile))
     }
-    glyphs <- getTTX(ttxfile)
+    getTTX(ttxfile)
+}
+
+## Get glyph number of ith non-UNICODE glyph from TTX
+getGlyph <- function(glyphs, index) {
     all <- xml_text(xml_find_all(glyphs, "//GlyphID/@name"))
     notUNICODE <- grep("^glyph", all)
     ## The first '- 1' is for zero-based glyph numbering
@@ -354,8 +354,42 @@ fontNameGen <- function() {
 }
 dvirFontName <- fontNameGen()
 
+## Get index of the desired glyph name within the subsetted font
+getGlyphIndex <- function(glyphs, fontfile, suffix, originalName) {
+    ttxfile <- gsub(paste0("[.]", suffix, "$"), "-glyf.ttx", fontfile)
+    if (!file.exists(ttxfile)) {
+        system(paste0("ttx -t glyf -o ", ttxfile, " ", fontfile))
+    }
+    glyf <- getTTX(ttxfile)
+    components <- xml_find_all(glyf,
+                               paste0("//TTGlyph[@name = '", originalName,
+                                      "']/component"))
+    if (length(components)) {
+        ## The subsetted font contains the glyph we want PLUS
+        ## glyphs that it is composed from
+        ## (plus .notdef glyph)
+        glyphNames <- xml_attr(components, "glyphName")
+        ## Find the order of the component glyphs (in the original font)
+        ## and where the desired glyph comes in that order
+        glyphID <- function(name) {
+            as.numeric(xml_attr(xml_find_first(glyphs,
+                                               paste0("//GlyphID[@name = '",
+                                                      name, "']")),
+                                "id"))
+        }
+        originalID <- glyphID(originalName)
+        glyphIDs <- sapply(glyphNames, glyphID)
+        ## + 1 for .notdef
+        sum(glyphIDs < originalID) + 2
+    } else {
+        ## The subsetted font just contains the glyph we want
+        ## (plus .notdef glyph)
+        2
+    }
+}
+
 ## Modify TTX file to set <name> and <cmap> elements
-editTTX <- function(ttxfile, fontname) {
+editTTX <- function(ttxfile, fontname, glyphIndex) {
     ttx <- read_xml(ttxfile)
     ## Replace <name> element
     name <- xml_find_first(ttx, "/ttFont/name")
@@ -372,20 +406,11 @@ editTTX <- function(ttxfile, fontname) {
     xml_add_child(newName, fullname)
     xml_add_child(newName, psname)
     xml_replace(name, newName)
-    ## Find the name of the second-to-last glyph
+    ## Find the name of the glyph
+    ## This is not obvious if the glyph is a composite of other glyphs
     ## (this is the glyph that was extracted from the full font)
     glyphs <- xml_find_all(ttx, "//GlyphID")
-    numGlyphs <- length(glyphs)
-    ## Subset always seems to include .notdef
-    if (numGlyphs == 2) {
-        ## Sometimes the result will only add the requested glyph
-        glyphName <- xml_attr(glyphs[numGlyphs], "name")
-    } else {
-        ## Sometimes (e.g., the glyph is constructed from other glyphs
-        ## in the font), several glyphs will be added, with a blank
-        ## glyph on the end and the requested glyph just before that
-        glyphName <- xml_attr(glyphs[numGlyphs - 1], "name")
-    }
+    glyphName <- xml_attr(glyphs[glyphIndex], "name")
     ## Add to <cmap> element
     cmap <- xml_find_first(ttx, "/ttFont/cmap")
     cmapTable <-
@@ -431,11 +456,15 @@ subsetFont <- function(fontfile, charIndex) {
     cachedFont <- fontFromCache(fontfile, charIndex)
     if (is.null(cachedFont)) {
         fontInfo <- getFont(fontfile, charIndex)
-        glyphInfo <- getGlyph(fontInfo$file, fontInfo$suffix, charIndex)
+        glyphs <- getGlyphs(fontInfo$file, fontInfo$suffix)
+        glyphInfo <- getGlyph(glyphs, charIndex)
         extractGlyph(fontInfo$file, glyphInfo$index, fontInfo$subfile)
         ttxfile <- unwrapFont(fontInfo$subfile, fontInfo$suffix)
         subsetName <- dvirFontName()
-        subsetTTX <- editTTX(ttxfile, subsetName)
+        subsetGlyphIndex <- getGlyphIndex(glyphs,
+                                          fontInfo$file, fontInfo$suffix,
+                                          glyphInfo$name)
+        subsetTTX <- editTTX(ttxfile, subsetName, subsetGlyphIndex)
         rewrapFont(subsetTTX, subsetName, fontInfo$suffix)
         cacheFont(fontfile, charIndex, subsetName)
     } else {
