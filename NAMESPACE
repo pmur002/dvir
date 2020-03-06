@@ -1,6 +1,10 @@
 
 import("grid")
 import("hexView")
+importFrom("extrafont",
+           "fonttable")
+importFrom("gdtools",
+           "fontconfig_reinit")
 importFrom("grDevices",
            "dev.cur",
            "dev.new",
@@ -27,8 +31,6 @@ importFrom("xml2",
            "xml_set_attr",
            "xml_set_text",
            "xml_text")
-importFrom("gdtools",
-           "fontconfig_reinit")
 
 export("readDVI",
 
