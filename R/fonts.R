@@ -108,13 +108,12 @@ addFontConfig <- function(family, psname) {
         configFile <- get("fontconfigFile")
         write_xml(fontconfig, configFile)
         set("fontcache", c(fontcache, paste(family, psname)))
-        ## TODO
         ## ~/.fonts.conf.d/ is deprecated in favour of
         ## $XDG_CONFIG_HOME/fontconfig/conf.d/ in recent versions of
-        ## fontconfig
+        ## fontconfig; cover both options.
         file.copy(configFile, "~/.fonts.conf.d", overwrite=TRUE)
+        file.copy(configFile, "~/fontconfig/conf.d", overwrite=TRUE)
         ## Force reload of config file
-        ## (this only exists in my fork of 'gdtools' in this directory)
         fontconfig_reinit()
     }
 }
