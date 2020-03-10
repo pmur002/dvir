@@ -178,7 +178,7 @@ dviGrob.DVI <- function(dvi,
                         rot=0,
                         device=names(dev.cur()),
                         name=NULL,
-                        engine=latexEngine,
+                        engine=texEngine,
                         ...) {
     if (!is.unit(x))
         x <- unit(x, default.units)
