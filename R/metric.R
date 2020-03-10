@@ -224,14 +224,29 @@ dviMetric <- function(x, device, engine, scale=1, TeX=FALSE) {
 ## calculation to be precise enough
 ## SO use PDF metric instead
 
-initCharMetric <- function() {
-    cd <- dev.cur()
-    on.exit(dev.set(cd))
-    dev <- pdf(NULL)
-    set("metricPDF", dev.cur())
+initMetricDev <- function() {
+    metricDev <- get("metricPDF")
+    if (is.null(metricDev)) {
+        cd <- dev.cur()
+        on.exit(dev.set(cd))
+        metricDev <- pdf(NULL)
+        set("metricPDF", dev.cur())
+    }
+}
+
+setMetricDev <- function() {
+    metricDev <- get("metricPDF")
+    dev.set(metricDev)
+    ## If somehow the metric PDF device has been closed, open one again
+    if (dev.cur() != metricDev) {
+        set("metricPDF", NULL)
+        initMetricDev()
+        setMetricDev()
+    }
 }
 
 charWidth <- function(raw, fonts, f) {
+    initMetricDev()
     char <- getChar(raw,
                     fonts[[f]]$postscriptname,
                     "pdf")
@@ -243,7 +258,7 @@ charWidth <- function(raw, fonts, f) {
                            cex=get("scale")))
     cd <- dev.cur()
     on.exit(dev.set(cd))
-    dev.set(get("metricPDF"))
+    setMetricDev()
     width <- xtoTeX(grobWidth(tg))
     width
 }

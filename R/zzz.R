@@ -2,7 +2,6 @@
 .onLoad <- function(libname, pkgname) {
     initFontMap()
     initFontConfig()
-    initCharMetric()
     initLuaOTFcache()
     initTTXcache()
 
