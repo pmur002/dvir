@@ -228,10 +228,19 @@ fontEnc <- function(afmFile) {
     ##       create a separate encoding file just for char zero
     encFileZero <- file.path(tempdir(), paste0(filebase, "Zero.enc"))
     writeLines(c(paste0("/", basename(filebase), "ZeroEncoding ["),
-                 paste0("/", c(".notdef", names[1], rep(".notdef", 254))),
+                 paste0("/", c(".notdef", names[1], rep(".notdef", 75),
+                               names[78], rep(".notdef", 178))),
                  "]"),
                encFileZero)
-    c(encFile, encFileZero)
+    ## NOTE: because R brute forces char 45 to /minus
+    ##       create a separate encoding file just for char 45
+    encFileHyphen <- file.path(tempdir(), paste0(filebase, "Hyphen.enc"))
+    writeLines(c(paste0("/", basename(filebase), "HyphenEncoding ["),
+                 paste0("/", c(".notdef", names[46], rep(".notdef", 75),
+                               names[78], rep(".notdef", 178))),
+                 "]"),
+               encFileHyphen)
+    c(encFile, encFileZero, encFileHyphen)
 }
 
 ################################################################################
@@ -241,8 +250,16 @@ fontEnc <- function(afmFile) {
 getChar <- function(raw, fontname, device) {
     if (psDevice(device) || pdfDevice(device)) {
         if (raw == 0) {
+            ## Need to encode 0 byte as special character because
+            ## R does not allow nulls within character values
             char <- rawToChar(as.raw(1))
             attr(char, "zeroChar") <- TRUE
+            char
+        } else if (raw == as.raw(45)) {
+            ## Need to encode 45 byte as special character because
+            ## R brute forces char 45 to /minus when it reads encoding file
+            char <- rawToChar(as.raw(1))
+            attr(char, "hyphenChar") <- TRUE
             char
         } else {
             rawToChar(raw)

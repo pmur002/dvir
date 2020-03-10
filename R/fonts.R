@@ -182,6 +182,15 @@ definePostScriptFont <- function(fontname) {
         args <- list(fontdefZero)
         names(args) <- fontnameZero
         do.call(postscriptFonts, args)
+        ## NOTE: because R brute forces char 45 to /minus
+        ##       create a separate encoding file just for char 45
+        fontnameHyphen <- paste0(fontname, "Hyphen")
+        fontdefHyphen <- Type1Font(fontnameHyphen,
+                                 rep(afmFile, 4),
+                                 encoding=enc[3])
+        args <- list(fontdefHyphen)
+        names(args) <- fontnameHyphen
+        do.call(postscriptFonts, args)
     }
     list(name=fontname,
          afm=afmFile, pfb=pfbFile,
@@ -207,15 +216,21 @@ definePDFFont <- function(fontname) {
         ## NOTE: because we cannot access char zero 
         ##       (cannot have null char in an R string)
         ##       create a separate encoding file just for char zero
-        ## NOTE: this single-char-font produces some warnings because
-        ##       R checks metric info for character 'M' quite a lot
-        ##       (and this single-char-font does not contain 'M')
         fontnameZero <- paste0(fontname, "Zero")
         fontdefZero <- Type1Font(fontnameZero,
                                  rep(afmFile, 4),
                                  encoding=enc[2])
         args <- list(fontdefZero)
         names(args) <- fontnameZero
+        do.call(pdfFonts, args)
+        ## NOTE: because R brute forces char 45 to /minus
+        ##       create a separate encoding file just for char 45
+        fontnameHyphen <- paste0(fontname, "Hyphen")
+        fontdefHyphen <- Type1Font(fontnameHyphen,
+                                 rep(afmFile, 4),
+                                 encoding=enc[3])
+        args <- list(fontdefHyphen)
+        names(args) <- fontnameHyphen
         do.call(pdfFonts, args)
     }
     list(name=fontname,
@@ -258,6 +273,8 @@ fontFamily <- function(font, char, device) {
     if (psDevice(device) || pdfDevice(device)) {
         if (!is.null(attr(char, "zeroChar"))) {
             paste0(font$name, "Zero")
+        } else if (!is.null(attr(char, "hyphenChar"))) {
+            paste0(font$name, "Hyphen")
         } else {
             font$name
         }

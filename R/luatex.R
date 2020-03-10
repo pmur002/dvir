@@ -63,6 +63,15 @@ luaDefinePostScriptFont <- function(fontInfo) {
         args <- list(fontdefZero)
         names(args) <- fontnameZero
         do.call(postscriptFonts, args)
+        ## NOTE: because R brute forces char 45 to /minus
+        ##       create a separate encoding file just for char 45
+        fontnameHyphen <- paste0(familyName, "Hyphen")
+        fontdefHyphen <- Type1Font(fontnameHyphen,
+                                 rep(afmFile, 4),
+                                 encoding=enc[3])
+        args <- list(fontdefHyphen)
+        names(args) <- fontnameHyphen
+        do.call(postscriptFonts, args)
     }
     list(name=familyName,
          afm=afmFile, pfb=pfbFile,
@@ -89,15 +98,21 @@ luaDefinePDFFont <- function(fontInfo) {
         ## NOTE: because we cannot access char zero 
         ##       (cannot have null char in an R string)
         ##       create a separate encoding file just for char zero
-        ## NOTE: this single-char-font produces some warnings because
-        ##       R checks metric info for character 'M' quite a lot
-        ##       (and this single-char-font does not contain 'M')
         fontnameZero <- paste0(familyName, "Zero")
         fontdefZero <- Type1Font(fontnameZero,
                                  rep(afmFile, 4),
                                  encoding=enc[2])
         args <- list(fontdefZero)
         names(args) <- fontnameZero
+        do.call(pdfFonts, args)
+        ## NOTE: because R brute forces char 45 to /minus
+        ##       create a separate encoding file just for char 45
+        fontnameHyphen <- paste0(familyName, "Hyphen")
+        fontdefHyphen <- Type1Font(fontnameHyphen,
+                                 rep(afmFile, 4),
+                                 encoding=enc[3])
+        args <- list(fontdefHyphen)
+        names(args) <- fontnameHyphen
         do.call(pdfFonts, args)
     }
     list(name=familyName,
@@ -185,6 +200,34 @@ AdobeGlyphList <- read.table(system.file("adobe", "glyphlist.txt",
                              sep=";", col.names=c("name", "code"),
                              stringsAsFactors=FALSE)
 
+
+## Convert 4-digit hex code to glyph name
+AdobeName <- function(code) {
+    AdobeGlyphList$name[AdobeGlyphList$code == code]    
+}
+
+## Convert 4-digit hex code to glyph name via font Unicode mapping
+cmapName <- function(code, fontfile, suffix) {
+    ttxfile <- gsub(paste0("[.]", suffix, "$"), "-cmap.ttx", fontfile)
+    if (!file.exists(ttxfile)) {
+        system(paste0("ttx -t cmap -o ", ttxfile, " ", fontfile))
+    }
+    cmap <- getTTX(ttxfile)
+    ## Format code for cmap
+    code <- tolower(gsub("^0*", "0x", code))
+    ## cmap table with platformID="0" is UNICODE mapping
+    ## NOTE: this may need relaxing to allow for other table formats
+    ##       (e.g., cmap_format_6)
+    unicodeMap <- paste0("//cmap_format_4[@platformID = '0']/map[@code = '",
+                         code, "']")
+    name <- xml_attr(xml_find_first(cmap, unicodeMap), "name")
+    if (length(name)) {
+        name
+    } else {
+        NULL
+    }   
+}
+
 ## Glyph name from raw bytes
 getGlyphName <- function(raw, fontname, device, fontfile, filesuffix) {
     if (psDevice(device) || pdfDevice(device)) {
@@ -201,23 +244,20 @@ getGlyphName <- function(raw, fontname, device, fontfile, filesuffix) {
                        ## First byte is 0x0F
                        ## Second two bytes are integer index into
                        ##   non-UNICODE glyphs
-                       getGlyph(getGlyphs(fontfile, filesuffix), 
-                                as.numeric(as.hexmode(paste(raw[2:3],
-                                                            collapse=""))))$name,
+                       paste(raw[2:3], collapse=""),
                        ## Have not yet witnessed set4 op
                        stop("set4 not yet supported"))
         ## May generate more than one option
         name <- switch(nbytes,
-                       AdobeGlyphList$name[AdobeGlyphList$code == code],
-                       c(AdobeGlyphList$name[AdobeGlyphList$code == code],
-                         paste0("uni", code)),
-                       ## Code is already name
-                       code,
+                       c(AdobeName(code),
+                         cmapName(code, fontfile, filesuffix)),
+                       c(AdobeName(code),
+                         paste0("uni", code),
+                         cmapName(code, fontfile, filesuffix)),
+                       ## Find non-UNICODE glyph name
+                       getGlyph(getGlyphs(fontfile, filesuffix), 
+                                as.numeric(as.hexmode(code)))$name,
                        stop("set4 not yet supported"))
-        ## HACK !?
-        if (name[1] == "hyphen") {
-            name <- c(name, "minus")
-        }
     } else {
         stop("Graphics device unsupported")
     }
@@ -270,7 +310,7 @@ ttxCharWidth <- function(raw, fontname, device, fontsize=10, cex=1) {
     ## round() to get whole number metrix (at 1000 scale)
     ## floor() to match what PDF_StrWidthUTF8() does
     widthPts <- floor(fontsize + .5)*cex*(round(width/(unitsPerEm/1000)))/1000
-    xtoTeX(unit(widthPts, "pt"))
+    xtoTeX(unit(widthPts, "bigpts"))
 }
 
 #########################
