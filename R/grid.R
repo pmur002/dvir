@@ -218,7 +218,7 @@ latexGrob <- function(tex,
                       preamble=getOption("dvir.preamble"),
                       postamble=getOption("dvir.postamble"),
                       engine=texEngine,
-                      tinytex=TRUE) {
+                      tinytex=FALSE) {
     haveTinyTeX <- tinytex && requireNamespace("tinytex", quietly=TRUE)
     if (!haveTinyTeX) {
         haveLaTeX <- nchar(Sys.which("latex"))
