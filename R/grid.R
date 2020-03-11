@@ -254,10 +254,10 @@ fontPaths <- function(x) {
     if (x$fonts$device %in% c("postscript", "pdf")) {
         paths <- sapply(x$fonts$fonts,
                         function(f) {
-                            if (is.null(f$pfb)) {
+                            if (is.null(f$file)) {
                                 ""
                             } else {
-                                dirname(f$pfb)
+                                dirname(f$file)
                             }
                         })
         paste(unique(paths[nchar(paths) > 0]), collapse=":")

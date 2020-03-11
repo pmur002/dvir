@@ -16,7 +16,15 @@ CMfont <- function(fontname) {
 ## about font options (for now) because R graphics does not make use
 ## of that extra information (for now)
 luaFontName <- function(fontname) {
-    gsub('^"|:.+', "", fontname)
+    name <- gsub('^"|:.+', "", fontname)
+    ## A local (rather than system) font has square brackets
+    if (grepl("^[[]", name)) {
+        name <- gsub("^[[]|[]]$", "", name)
+        fontfile <- list.files(pattern=name, ignore.case=TRUE)
+        suffix <- gsub(".+[.]", "", fontfile[1])
+        name <- paste0("file:", name, ".", suffix)
+    }
+    name
 }
 
 luaFontInfo <- function(fontname) {
@@ -29,7 +37,7 @@ luaFontInfo <- function(fontname) {
         stop("Lua font not found on system")
     }
     fontdb <- fonttable()
-    dbline <- grep(fontFile, fontdb$fontfile)
+    dbline <- grep(normalizePath(fontFile), fontdb$fontfile, ignore.case=TRUE)
     if (length(dbline) == 0) {
         stop("Lua font not registered with 'extrafont'; run extrafont::font_import() and try again")
     }
@@ -40,7 +48,7 @@ luaFontInfo <- function(fontname) {
 luaDefinePostScriptFont <- function(fontInfo) {
     afmFile <- system.file("metrics", fontInfo$afmfile,
                            package="extrafontdb")
-    pfbFile <- fontInfo$fontfile
+    fontFile <- fontInfo$fontfile
     afm <- readLines(afmFile)
     enc <- fontEnc(afmFile)
     fullName <- fontInfo$FullName
@@ -74,7 +82,7 @@ luaDefinePostScriptFont <- function(fontInfo) {
         do.call(postscriptFonts, args)
     }
     list(name=familyName,
-         afm=afmFile, pfb=pfbFile,
+         afm=afmFile, file=fontFile,
          postscriptname=fullname,
          size=10)
 }
@@ -82,7 +90,7 @@ luaDefinePostScriptFont <- function(fontInfo) {
 luaDefinePDFFont <- function(fontInfo) {
     afmFile <- system.file("metrics", fontInfo$afmfile,
                            package="extrafontdb")
-    pfbFile <- fontInfo$fontfile
+    fontFile <- fontInfo$fontfile
     afm <- readLines(afmFile)
     enc <- fontEnc(afmFile)
     fullName <- fontInfo$FullName
@@ -116,7 +124,7 @@ luaDefinePDFFont <- function(fontInfo) {
         do.call(pdfFonts, args)
     }
     list(name=familyName,
-         afm=afmFile, pfb=pfbFile,
+         afm=afmFile, file=fontFile,
          postscriptname=fullName,
          size=10)
 }
@@ -186,7 +194,7 @@ luaCharWidth <- function(raw, fonts, f) {
     } else {
         device <- get("device")
         ## Calculate char width from TTX metrics
-        ttxCharWidth(raw, fonts[[f]]$postscriptname, device,
+        ttxCharWidth(raw, fonts[[f]]$file, device,
                      fontsize=fonts[[f]]$size,
                      cex=get("scale"))
     }
@@ -229,7 +237,7 @@ cmapName <- function(code, fontfile, suffix) {
 }
 
 ## Glyph name from raw bytes
-getGlyphName <- function(raw, fontname, device, fontfile, filesuffix) {
+getGlyphName <- function(raw, device, fontfile, filesuffix) {
     if (psDevice(device) || pdfDevice(device)) {
         stop("Sorry, no support for non-CM fonts outside Cairo devices (for now)")
     } else if (cairoDevice(device)) {
@@ -277,10 +285,9 @@ widthFromGlyphName <- function(name, hmtx) {
 }
 
 ## Calculate character width from TTX font metrics
-ttxCharWidth <- function(raw, fontname, device, fontsize=10, cex=1) {
+ttxCharWidth <- function(raw, fontpath, device, fontsize=10, cex=1) {
     tmpFontDir <- initFontDir()
-    originalfontfile <- getFontFile(fontname)
-    filename <- basename(originalfontfile)
+    filename <- basename(fontpath)
     fontsuffix <- "[.](ttf|otf)$"
     if (!grepl(fontsuffix, filename))
         warning("Unrecognised font suffix")
@@ -288,7 +295,7 @@ ttxCharWidth <- function(raw, fontname, device, fontsize=10, cex=1) {
     filestub <- gsub(fontsuffix, "", filename)
     fontfile <- file.path(tmpFontDir, filename)
     if (!file.exists(fontfile)) {
-        file.copy(originalfontfile, tmpFontDir)
+        file.copy(fontpath, tmpFontDir)
     }
     ## Get font metric "scale"
     headTTXfile <- file.path(tmpFontDir, paste0(filestub, "-head.ttx"))
@@ -299,7 +306,7 @@ ttxCharWidth <- function(raw, fontname, device, fontsize=10, cex=1) {
     unitsPerEm <- as.numeric(xml_text(xml_find_first(headTTX,
                                                      "//unitsPerEm/@value")))
     ## Convert char num to glyph name
-    glyphName <- getGlyphName(raw, fontname, device, fontfile, filesuffix)
+    glyphName <- getGlyphName(raw, device, fontfile, filesuffix)
     ## Find glyph width
     hmtxTTXfile <- file.path(tmpFontDir, paste0(filestub, "-hmtx.ttx"))
     if (!file.exists(hmtxTTXfile)) {

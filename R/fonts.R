@@ -193,7 +193,7 @@ definePostScriptFont <- function(fontname) {
         do.call(postscriptFonts, args)
     }
     list(name=fontname,
-         afm=afmFile, pfb=pfbFile,
+         afm=afmFile, file=pfbFile,
          postscriptname=fullname,
          size=fontSize(fullname))
 }
@@ -234,7 +234,7 @@ definePDFFont <- function(fontname) {
         do.call(pdfFonts, args)
     }
     list(name=fontname,
-         afm=afmFile, pfb=pfbFile,
+         afm=afmFile, file=pfbFile,
          postscriptname=fullname,
          size=fontSize(fullname))
 }
