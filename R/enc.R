@@ -206,21 +206,21 @@ rawToUTF8 <- function(x, fontname) {
 ################################################################################
 ## TeX byte to char
 
-## Generate encoding files from AFM files (order of character names)
+## Generate encoding files from AFM files 
 
 fontEnc <- function(afmFile) {
     afm <- readLines(afmFile)
     chars <- grep("^C ", afm)
-    names <- lapply(strsplit(afm[chars], " "),
-                    function(x) x[8])
-    pad <- 256 - length(names)
-    if (pad > 0) {
-        names <- c(names, rep(".notdef", pad))
-    }
+    fields <- strsplit(afm[chars], " ")
+    codes <- as.numeric(sapply(fields, function(x) x[2]))
+    names <- sapply(fields, function(x) x[8])
+    enccodes <- codes >= 0
+    encnames <- rep(".notdef", 256)
+    encnames[codes[enccodes] + 1] <- names[enccodes]
     filebase <- basename(gsub("[.]afm", "", afmFile))
     encFile <- file.path(tempdir(), paste0(filebase, ".enc"))
     writeLines(c(paste0("/", basename(filebase), "Encoding ["),
-                 paste0("/", names),
+                 paste0("/", encnames),
                  "]"),
                encFile)
     ## NOTE: because we cannot access char zero 

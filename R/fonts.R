@@ -118,9 +118,25 @@ addFontConfig <- function(family, psname) {
     }
 }
 
+## TODO
+## This needs to be a LOT smarter
+## (see, e.g., pdftex manual for pdftex.map syntax)
 initFontMap <- function() {
     mapfile <- system("kpsewhich pdftex.map", intern=TRUE)
-    set("fontmap", readLines(mapfile))
+    mapFields <- scan(mapfile, what=as.list(rep("", 5)),
+                      comment.char="%", fill=TRUE, quiet=TRUE)
+    tfm <- mapFields[[1]]
+    ## Not guaranteed, but for now ...
+    psname <- mapFields[[2]]
+    pfb3 <- grepl("^<", mapFields[[3]]) & grepl("[.]pfb$", mapFields[[3]])
+    pfb4 <- grepl("^<", mapFields[[4]]) & grepl("[.]pfb$", mapFields[[4]])
+    pfb <- ifelse(pfb3,
+                  mapFields[[3]],
+                  ifelse(pfb4,
+                         mapFields[[4]],
+                         mapFields[[5]]))
+    map <- data.frame(psname, pfb, stringsAsFactors=FALSE)
+    set("fontmap", map)
 }
 
 ################################################################################
@@ -128,11 +144,8 @@ initFontMap <- function() {
 findTeXFontFile <- function(fontname, checksum, suffix=".afm") {
     ## Map fontname to actual font file
     map <- get("fontmap")
-    fontline <- grep(paste0("^", fontname, " "), map)
-    ## TODO
-    ## This needs to be a lot smarter
-    ## (see, e.g., pdftex manual for pdftex.map syntax)
-    font <- gsub(".+<|[.]pfb$", "", map[fontline])
+    fontline <- grep(paste0("^", fontname, "$"), map$psname, ignore.case=TRUE)
+    font <- gsub("^<+|[.]pfb$", "", map$pfb[fontline])
     file <- system(paste0("kpsewhich ", font,
                           " --format=", suffix),
                    intern=TRUE)
@@ -145,6 +158,7 @@ findTeXFontFile <- function(fontname, checksum, suffix=".afm") {
     if (length(file) == 0) {
         ## TODO
         ## Font substitution ?
+        stop("Failed to find TeX font")
     }
     ## TODO
     ## Check checksum
@@ -154,7 +168,7 @@ findTeXFontFile <- function(fontname, checksum, suffix=".afm") {
 ## TODO
 ## This ASSUMES original TeX font naming
 fontSize <- function(fontname) {
-    as.numeric(gsub("^[^0-9]+", "", fontname))
+    as.numeric(gsub("[^0-9]+", "", fontname))
 }
    
 definePostScriptFont <- function(fontname) {

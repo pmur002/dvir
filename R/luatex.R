@@ -5,18 +5,15 @@
 ## SO, we need different functions to map the font definition
 ## to an R font (depending on the R graphics device)
 
-## The heuristic for a non-computer-modern font is just that the
-## font name is surrounded by double-quotes (and contains more than
-## just the font name)
-CMfont <- function(fontname) {
-    !grepl('^"', fontname)
-}
-
 ## We just retain the font name and discard the extra font information
 ## about font options (for now) because R graphics does not make use
 ## of that extra information (for now)
 luaFontName <- function(fontname) {
-    name <- gsub('^"|:.+', "", fontname)
+    ## Allow for ...
+    ##   filename="fontname:...;..."
+    ##   filename="file:fontname:...;..."
+    ##   filename="[fontfile.ttf]:...;..."
+    name <- gsub('^"(file:)?|:.+', "", fontname)
     ## A local (rather than system) font has square brackets
     if (grepl("^[[]", name)) {
         name <- gsub("^[[]|[]]$", "", name)
@@ -28,21 +25,33 @@ luaFontName <- function(fontname) {
 }
 
 luaFontInfo <- function(fontname) {
+    ## Failure returns NULL
+    result <- NULL
+    warnings <- NULL
     fontSearchResult <- system(paste0("luaotfload-tool --find=",
-                                      luaFontName(fontname)),
+                                      fontname),
                                intern=TRUE)
     if (grepl("found!$", fontSearchResult[1])) {
         fontFile <- gsub('^[^"]+"|"$', "", fontSearchResult[2])
     } else {
         stop("Lua font not found on system")
     }
+    ## Try matching exact font file (should work for TTF system fonts)
     fontdb <- fonttable()
     dbline <- grep(normalizePath(fontFile), fontdb$fontfile, ignore.case=TRUE)
     if (length(dbline) == 0) {
-        stop("Lua font not registered with 'extrafont'; run extrafont::font_import() and try again")
+        ## Try just matching font FullName
+        dbline <- grep(fontname, fontdb$FullName, ignore.case=TRUE)
+        if (length(dbline)) {
+            warnings <- "Matched font by name (not file)"
+        }
     }
-    ## If more than one line matches, use first one
-    fontdb[dbline[1], ]
+    if (length(dbline)) {
+        ## If more than one line matches, use first one
+        result <- fontdb[dbline[1], ]
+        attr(result, "warnings") <- warnings
+    }
+    result
 }
 
 luaDefinePostScriptFont <- function(fontInfo) {
@@ -134,11 +143,13 @@ luaDefineCairoFont <- function(fontInfo) {
 }
 
 luaDefineFont <- function(fontname, device) {
-    if (CMfont(fontname)) {
-        defn <- defineFont(fontname, device)
-        defn$CMfont <- TRUE
+    fontFullName <- luaFontName(fontname)
+    fontInfo <- luaFontInfo(fontFullName)
+    if (is.null(fontInfo)) {
+        ## Assume the font is a TeX font
+        defn <- defineFont(fontFullName, device)
+        defn$TeXfont <- TRUE
     } else {
-        fontInfo <- luaFontInfo(fontname)
         if (psDevice(device)) {
             defn <- luaDefinePostScriptFont(fontInfo)
         } else if (pdfDevice(device)) {
@@ -152,7 +163,7 @@ luaDefineFont <- function(fontname, device) {
             ## Other devices
             stop("Graphics device unsupported")
         }
-        defn$CMfont <- FALSE
+        defn$TeXfont <- FALSE
     }
     defn
 }
@@ -188,7 +199,7 @@ luaGetChar <- function(raw, fontname, device) {
 
 luaCharWidth <- function(raw, fonts, f) {
     font <- fonts[[f]]
-    if (font$CMfont) {
+    if (font$TeXfont) {
         ## Uses PDF device for char metrics even on Cairo device
         charWidth(raw, fonts, f)
     } else {
@@ -396,7 +407,7 @@ fontNameGen <- function() {
     index <- 0
     function() {
         index <<- index + 1
-        paste0("dvir_font_", index)
+        sprintf("dvir_font_%03d", index)
     }
 }
 dvirFontName <- fontNameGen()
