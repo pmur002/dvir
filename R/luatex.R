@@ -1,4 +1,41 @@
 
+## Do the default font_info_op for most operations
+## (this includes font definitions, bop, and pre)
+for (i in 0:255) {
+    assign(paste0("lua_font_info_", i),
+           get(paste0("font_info_", i)))
+}
+
+## fnt_num_<i>
+## Need to track which font is currently being used (for set3 op)
+for (i in 171:234) {
+    assign(paste0("lua_font_info_", i), op_fnt_num)
+}
+
+## set3 instructions generate a subset font
+lua_font_info_130 <- function(op) {
+    fonts <- get("fonts")
+    f <- get("f")
+    device <- get("device")
+    if (psDevice(device) || pdfDevice(device)) {
+        stop("Sorry, no support for non-CM fonts outside Cairo devices (for now)")
+    } else if (cairoDevice(device)) {
+        raw <- op$blocks$op.opparams$fileRaw
+        fontname <- fonts[[f]]$postscriptname
+        index <- as.numeric(as.hexmode(paste(raw[2:3], collapse="")))
+        fontfile <- getFontFile(fontname)
+        ## Generate special font for char
+        customFont <- subsetFont(fontfile, index)
+        ## Get special font into font cache (and FontConfig configuration)
+        addFontConfig(customFont$family, customFont$postscriptname)
+    }
+}
+
+luaReadFontInfo <- function(op) {
+    opcode <- blockValue(op$blocks$op.opcode)
+    base::get(paste0("lua_font_info_", opcode))(op)
+}
+
 ## LuaTeX can generate a different format of fnt_def_op
 ## (specifically, the 'fontname')
 ## if the user has made use of the 'fontspec' package

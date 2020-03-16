@@ -28,7 +28,11 @@ dviFonts <- function(x, device, engine) {
 dviFonts.DVI <- function(x, device, engine) {
     set("device", device)
     set("engine", engine)
-    invisible(lapply(x, readFontInfo))
+    invisible(lapply(x, engine$readFonts))
+    if (cairoDevice(device)) {
+        ## Force reload of FontConfig configuration file
+        fontconfig_reinit()
+    }
     info <- list(fonts=get("fonts"),
                  device=device)
     class(info) <- "DVIfontInfo"
@@ -113,7 +117,7 @@ addFontConfig <- function(family, psname) {
         ## fontconfig; cover both options.
         file.copy(configFile, "~/.fonts.conf.d", overwrite=TRUE)
         file.copy(configFile, "~/fontconfig/conf.d", overwrite=TRUE)
-        ## Force reload of config file
+        ## Force reload of FontConfig configuration file
         fontconfig_reinit()
     }
 }
@@ -166,7 +170,7 @@ findTeXFontFile <- function(fontname, checksum, suffix=".afm") {
 }
 
 ## TODO
-## This ASSUMES original TeX font naming
+## This ASSUMES that the font name contains a font size
 fontSize <- function(fontname) {
     as.numeric(gsub("[^0-9]+", "", fontname))
 }
