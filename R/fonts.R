@@ -279,6 +279,7 @@ defineFont <- function(fontname, device) {
         ## Also define PDF font for font metric calculations (see ./metric.R)
         defn <- definePDFFont(fontname)
         defn <- c(defn, defineCairoFont(fontname))
+        addFontConfig(defn$family, defn$postscriptname)
     } else {
         ## TODO
         ## Other devices 
@@ -305,7 +306,6 @@ fontFamily <- function(font, char, device) {
             family <- font$family
             psname <- font$postscriptname
         }
-        addFontConfig(family, psname)
         paste(family, psname)
     }
 }

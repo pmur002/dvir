@@ -195,6 +195,7 @@ luaDefineFont <- function(fontname, device) {
             ## Also get information like PostScriptName
             defn <- luaDefinePDFFont(fontInfo)
             defn <- c(defn, luaDefineCairoFont(fontInfo))
+            addFontConfig(defn$family, defn$postscriptname)
         } else {
             ## TODO
             ## Other devices
