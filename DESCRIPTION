@@ -8,7 +8,7 @@ Description: Functions to read DVI files, as produced from TeX documents,
              and render them within R.
 Depends: grid
 Suggests: tinytex
-SystemRequirements: A TeX distribution such as TeX Live
+SystemRequirements: A TeX distribution such as TeX Live, fonttools, fontconfig
 Imports: extrafont, grDevices, hexView (>= 0.3-4), xml2, gdtools (> 0.1.7.9000)
 Collate: globals.R convert.R device.R ops.R fonts.R enc.R metric.R luatex.R engine.R read.R print.R grid.R zzz.R
 License: GPL-3
