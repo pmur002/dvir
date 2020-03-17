@@ -94,11 +94,16 @@ initFontConfig <- function() {
     set("fontcache", NULL)
 }
 
-addFontConfig <- function(family, psname) {
+addFontConfig <- function(family, psname, dir=NULL) {
     fontcache <- get("fontcache")
     if (is.null(fontcache) ||
         !paste(family, psname) %in% fontcache) {
         fontconfig <- xml_root(get("fontconfig"))
+        if (!is.null(dir)) {
+            ## Specify 'dir' if need to tell FontConfig about
+            ## location of a font
+            xml_add_child(fontconfig, "dir", dir)
+        }
         match <- xml_add_child(fontconfig, "match", target="pattern")
         test <- xml_add_child(match, "test", name="family", compare="eq")
         xml_add_child(test, "string", paste(family, psname))
@@ -279,7 +284,10 @@ defineFont <- function(fontname, device) {
         ## Also define PDF font for font metric calculations (see ./metric.R)
         defn <- definePDFFont(fontname)
         defn <- c(defn, defineCairoFont(fontname))
-        addFontConfig(defn$family, defn$postscriptname)
+        addFontConfig(defn$family, defn$postscriptname,
+                      ## This may need adjusting to support wider range
+                      ## of fonts with standard latexEngine
+                      dir=NULL)
     } else {
         ## TODO
         ## Other devices 

@@ -27,7 +27,10 @@ lua_font_info_130 <- function(op) {
         ## Generate special font for char
         customFont <- subsetFont(fontfile, index)
         ## Get special font into font cache (and FontConfig configuration)
-        addFontConfig(customFont$family, customFont$postscriptname)
+        addFontConfig(customFont$family, customFont$postscriptname,
+                      ## Special fonts are in temporary directory that
+                      ## has already been added to FontConfig configuration
+                      dir=NULL)
     }
 }
 
@@ -47,16 +50,20 @@ luaReadFontInfo <- function(op) {
 ## of that extra information (for now)
 luaFontName <- function(fontname) {
     ## Allow for ...
-    ##   filename="fontname:...;..."
-    ##   filename="file:fontname:...;..."
-    ##   filename="[fontfile.ttf]:...;..."
+    ##   filename="fontname:...;..."       = system font
+    ##   filename="file:fontname:...;..."  = TeX font
+    ##   filename="[fontfile.ttf]:...;..." = local font
     name <- gsub('^"(file:)?|:.+', "", fontname)
     ## A local (rather than system) font has square brackets
+    ## We only support fonts in the current working directory so far
     if (grepl("^[[]", name)) {
         name <- gsub("^[[]|[]]$", "", name)
         fontfile <- list.files(pattern=name, ignore.case=TRUE)
         suffix <- gsub(".+[.]", "", fontfile[1])
+        ## Generate appropriate format for luaotfload-tool call
         name <- paste0("file:", name, ".", suffix)
+        ## Keep information needed for FontConfig
+        attr(name, "dir") <- getwd()
     }
     name
 }
@@ -88,6 +95,8 @@ luaFontInfo <- function(fontname) {
         result <- fontdb[dbline[1], ]
         attr(result, "warnings") <- warnings
     }
+    ## Add directory for local font
+    result$dir <- attr(fontname, "dir")
     result
 }
 
@@ -176,7 +185,8 @@ luaDefinePDFFont <- function(fontInfo) {
 }
 
 luaDefineCairoFont <- function(fontInfo) {
-    list(family=fontInfo$FamilyName)
+    list(family=fontInfo$FamilyName,
+         dir=fontInfo$dir)
 }
 
 luaDefineFont <- function(fontname, device) {
@@ -195,7 +205,7 @@ luaDefineFont <- function(fontname, device) {
             ## Also get information like PostScriptName
             defn <- luaDefinePDFFont(fontInfo)
             defn <- c(defn, luaDefineCairoFont(fontInfo))
-            addFontConfig(defn$family, defn$postscriptname)
+            addFontConfig(defn$family, defn$postscriptname, defn$dir)
         } else {
             ## TODO
             ## Other devices
