@@ -11,10 +11,14 @@
 }
 \usage{
 dviGrob(dvi, \dots) 
-\method{dviGrob}{character}(dvi, x = 0.5, y = 0.5, default.units = "npc", just = "centre", 
-        rot = 0, device = names(dev.cur()), name = NULL, \dots)
-\method{dviGrob}{DVI}(dvi, x = 0.5, y = 0.5, default.units = "npc", just = "centre", 
-        rot = 0, device = names(dev.cur()), name = NULL, \dots)
+\method{dviGrob}{character}(dvi, x = 0.5, y = 0.5,
+        default.units = "npc", just = "centre", 
+        rot = 0, device = names(dev.cur()), name = NULL,
+        engine=texEngine, \dots)
+\method{dviGrob}{DVI}(dvi, x = 0.5, y = 0.5,
+        default.units = "npc", just = "centre", 
+        rot = 0, device = names(dev.cur()), name = NULL, 
+        engine=texEngine, \dots)
 
 grid.dvi(\dots)
 }
@@ -32,6 +36,7 @@ grid.dvi(\dots)
   \item{device}{Character value describing the name of the device that
     the output is to be drawn on.}
   \item{name}{Character value giving name for the grob.}
+  \item{engine}{The TeX engine that was used to generate the DVI file.}
   \item{\dots}{
     Arguments specific to methods of \code{dviGrob} or,
     for \code{grid.dvi}, arguments passed to \code{dviGrob}.
@@ -39,9 +44,6 @@ grid.dvi(\dots)
 }
 \value{
   A \code{"DVIgrob"} object.
-}
-\references{
-%% ~put references to the literature/web site here ~
 }
 \author{
   Paul Murrell

@@ -168,8 +168,10 @@ dviGrob.character <- function(dvi,
                               default.units="npc", just="centre",
                               rot=0,
                               device=names(dev.cur()),
-                              name=NULL, ...) {
-    dviGrob(readDVI(dvi), x, y, default.units, just, rot, device, name)
+                              name=NULL,
+                              engine=texEngine,
+                              ...) {
+    dviGrob(readDVI(dvi), x, y, default.units, just, rot, device, name, engine)
 }
 
 dviGrob.DVI <- function(dvi,

@@ -16,9 +16,6 @@ readDVI(f)
 \value{
   A \code{"DVI"} object.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
 \author{
   Paul Murrell
 }

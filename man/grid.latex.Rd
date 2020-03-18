@@ -9,8 +9,10 @@
 }
 \usage{
 latexGrob(tex, x = 0.5, y = 0.5, default.units = "npc", just = "centre", 
-          rot = 0, device = names(dev.cur()), name = NULL) 
-
+          rot = 0, device = names(dev.cur()), name = NULL,
+          preamble=getOption("dvir.preamble"),
+          postamble=getOption("dvir.postamble"),
+          engine=texEngine, tinytex=FALSE) 
 grid.latex(...)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -26,6 +28,12 @@ grid.latex(...)
   \item{device}{Character value describing the name of the device that
     the output is to be drawn on.}
   \item{name}{Character value giving name for the grob.}
+  \item{preamble,postamble}{LaTeX code that is placed around \code{tex}
+    before processing.}
+  \item{engine}{The TeX engine that is used for processing the LaTeX
+    code.}
+  \item{tinytex}{Should \pkg{dvir} attempt to use \pkg{tinytex} to
+    perform the processing?}
   \item{\dots}{
     Arguments passed to \code{latexGrob}.
   }
@@ -34,12 +42,14 @@ grid.latex(...)
   This function takes LaTeX code as input, processes the LaTeX code
   to produce a DVI file, reads the DVI file, and renders the result
   using \pkg{grid}.
+
+  The default engine is the \code{\link{texEngine}}, which runs
+  \code{latex} to generate DVI;  an alternative
+  is the \code{\link{luatexEngine}}, which runs \code{dvilualatex}
+  to generate DVI.
 }
 \value{
   A \code{"DVIgrob"} object.
-}
-\references{
-%% ~put references to the literature/web site here ~
 }
 \author{
   Paul Murrell

@@ -138,7 +138,7 @@ luaDefinePostScriptFont <- function(fontInfo) {
     }
     list(name=familyName,
          afm=afmFile, file=fontFile,
-         postscriptname=fullname,
+         postscriptname=fullName,
          size=10)
 }
 
