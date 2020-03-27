@@ -3,8 +3,8 @@ import("grid")
 import("hexView")
 importFrom("extrafont",
            "fonttable")
-importFrom("gdtools",
-           "fontconfig_reinit")
+importFrom("systemfonts",
+           "reset_font_cache")
 importFrom("grDevices",
            "dev.cur",
            "dev.new",

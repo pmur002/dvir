@@ -31,7 +31,7 @@ dviFonts.DVI <- function(x, device, engine) {
     invisible(lapply(x, engine$readFonts))
     if (cairoDevice(device)) {
         ## Force reload of FontConfig configuration file
-        fontconfig_reinit()
+        reset_font_cache()
     }
     info <- list(fonts=get("fonts"),
                  device=device)
@@ -123,7 +123,7 @@ addFontConfig <- function(family, psname, dir=NULL) {
         file.copy(configFile, "~/.fonts.conf.d", overwrite=TRUE)
         file.copy(configFile, "~/fontconfig/conf.d", overwrite=TRUE)
         ## Force reload of FontConfig configuration file
-        fontconfig_reinit()
+        reset_font_cache()
     }
 }
 
