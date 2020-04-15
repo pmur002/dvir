@@ -52,18 +52,36 @@ luaFontName <- function(fontname) {
     ## Allow for ...
     ##   filename="fontname:...;..."       = system font
     ##   filename="file:fontname:...;..."  = TeX font
+    ##   filename="[fontname]:...;..."     = TeX font
     ##   filename="[fontfile.ttf]:...;..." = local font
     name <- gsub('^"(file:)?|:.+', "", fontname)
-    ## A local (rather than system) font has square brackets
-    ## We only support fonts in the current working directory so far
     if (grepl("^[[]", name)) {
+        ## Check for a local font
+        ## We only support fonts in the current working directory so far
         name <- gsub("^[[]|[]]$", "", name)
-        fontfile <- list.files(pattern=name, ignore.case=TRUE)
-        suffix <- gsub(".+[.]", "", fontfile[1])
-        ## Generate appropriate format for luaotfload-tool call
-        name <- paste0("file:", name, ".", suffix)
-        ## Keep information needed for FontConfig
-        attr(name, "dir") <- getwd()
+        if (grepl("[.]", name)) {
+            fontfile <- list.files(pattern=name, ignore.case=TRUE)
+        } else {
+            fontfile <- list.files(pattern=paste0(name, "[.]"),
+                                   ignore.case=TRUE)
+        }
+        if (length(fontfile)) {
+            ## A local (rather than system) font has square brackets
+            ## and a suffix
+            suffix <- gsub(".+[.]", "", fontfile[1])
+            ## Generate appropriate format for luaotfload-tool call
+            ## This happens to work for different luaTeX versions
+            ## because in one, name has no suffix and adding suffix works,
+            ## while in other, name has suffix, but adding superfluous suffix
+            ## is necessary (!)
+            name <- paste0("file:", name, ".", suffix)
+            ## Keep information needed for FontConfig
+            attr(name, "dir") <- getwd()
+        } else {
+            ## Otherwise assume this is a TeX font
+            ## (that luaotfload-tool will find)
+            name <- gsub("[[]|[]]", "", name)
+        }
     }
     name
 }
@@ -422,9 +440,16 @@ getGlyph <- function(glyphs, index) {
     all <- xml_text(xml_find_all(glyphs, "//GlyphID/@name"))
     notUNICODE <- grep("^glyph", all)
     ## The first '- 1' is for zero-based glyph numbering
+    ## At some point, LuaTeX counted differently (by one)
+    ## Choosing this to be at version 1.0.0 for now;
+    ## May need to refining ...
+    version <- get("luaVersion")
+    if (compareVersion(version, "1.0.0") < 0) {
+        index <- index - 1
+    }
     ## The second '- 1' is an off-by-one adjustment
     ## (maybe LuaTeX does not count the .notdef char?)
-    glyphNum <- (seq_along(all) - 1)[notUNICODE[index - 1]]
+    glyphNum <- (seq_along(all) - 1)[notUNICODE[index]]
     list(index=glyphNum,
          name=all[glyphNum + 1])
 }
@@ -643,3 +668,13 @@ getTTX <- function(ttxFile) {
     }
     ttx
 }
+
+
+initLua <- function() {
+    versText <- system("luatex --version", intern=TRUE)[1]
+    version <- gsub(" .+", "", gsub("^[^0-9]+", "", versText))
+    set("luaVersion", version)
+    initLuaOTFcache()
+    initTTXcache()    
+}
+

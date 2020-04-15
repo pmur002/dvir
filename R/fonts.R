@@ -120,7 +120,13 @@ addFontConfig <- function(family, psname, dir=NULL) {
         ## ~/.fonts.conf.d/ is deprecated in favour of
         ## $XDG_CONFIG_HOME/fontconfig/conf.d/ in recent versions of
         ## fontconfig; cover both options.
+        if (!dir.exists("~/.fonts.conf.d")) {
+            dir.create("~/.fonts.conf.d")
+        }
         file.copy(configFile, "~/.fonts.conf.d", overwrite=TRUE)
+        if (!dir.exists("~/fontconfig/conf.d")) {
+            dir.create("~/fontconfig/conf.d", recursive=TRUE)
+        }
         file.copy(configFile, "~/fontconfig/conf.d", overwrite=TRUE)
         ## Force reload of FontConfig configuration file
         reset_font_cache()

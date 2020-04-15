@@ -2,8 +2,7 @@
 .onLoad <- function(libname, pkgname) {
     initFontMap()
     initFontConfig()
-    initLuaOTFcache()
-    initTTXcache()
+    initLua()
 
     options(dvir.preamble=paste(c("\\documentclass[12pt]{standalone}",
                                   "\\begin{document}"),
