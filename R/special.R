@@ -51,7 +51,10 @@ parseLocn <- function(x) {
 
 parseStroke <- function(x) {
     xy <- do.call(rbind, lapply(xml_children(x), parseLocn))
-    polylineGrob(x=xy[,1], y=xy[,2], default.units="pt")
+    picX <- get("pictureX")
+    picY <- get("pictureY")
+    polylineGrob(x=unit(picX, "native") + unit(xy[,1], "pt"),
+                 y=unit(picY, "native") + unit(xy[,2], "pt"))
 }
 
 parseValueWithUnit <- function(x) {
@@ -99,7 +102,9 @@ parseG <- function(x) {
         settings <- mapply(parseSetting, attrNames, attrs, SIMPLIFY=FALSE)
         names(settings) <- parseSettingNames(attrNames)
         vpName <- vpName()
+        topvp <- get("viewport")
         vp <- viewport(gp=do.call(gpar, settings),
+                       xscale=topvp$xscale, yscale=topvp$yscale,
                        name=vpName)
         gTree(vp=vp,
               children=do.call(gList,
@@ -131,6 +136,10 @@ specialGrob <- function(op) {
                           paste(blockValue(op$blocks$op.opparams.string),
                                 collapse=""))
     if (specialString == "<picture>") {
+        x <- fromTeX(get("h"))
+        y <- fromTeX(get("v"))
+        set("pictureX", x)
+        set("pictureY", y)
         set("inPicture", TRUE)
         buffer <- file(open="w+")
         writeLines(specialString, buffer)
