@@ -176,10 +176,14 @@ for (i in 171:234) {
 }
 
 ## xxx<i> (specials)
-metric_info_239 <- op_ignore
-metric_info_240 <- op_ignore
-metric_info_241 <- op_ignore
-metric_info_242 <- op_ignore
+metricSpecial <- function(op) {
+    engine <- get("engine")
+    engine$special$metric(op)
+}
+metric_info_239 <- metricSpecial
+metric_info_240 <- metricSpecial
+metric_info_241 <- metricSpecial
+metric_info_242 <- metricSpecial
 
 ## font_def<i>
 metric_info_243 <- op_font_def
