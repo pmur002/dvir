@@ -127,10 +127,15 @@ for (i in 171:234) {
 }
 
 ## xxx<i> (specials)
-grid_op_239 <- op_ignore
-grid_op_240 <- op_ignore
-grid_op_241 <- op_ignore
-grid_op_242 <- op_ignore
+gridSpecial <- function(op) {
+    engine <- get("engine")
+    engine$special$grob(op)
+}
+
+grid_op_239 <- gridSpecial
+grid_op_240 <- gridSpecial
+grid_op_241 <- gridSpecial
+grid_op_242 <- gridSpecial
 
 ## font_def<i>
 grid_op_243 <- op_font_def

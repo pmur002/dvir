@@ -232,4 +232,6 @@ op_pre <- function(op) {
     set("den", den)
     set("mag", mag)
     set("fonts", vector("list", 255))
+    engine <- get("engine")
+    engine$special$init()
 }

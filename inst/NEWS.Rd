@@ -2,6 +2,12 @@
 \title{NEWS file for the dvir package}
 \encoding{UTF-8}
 
+\section{Changes in version 0.3-0}{
+  \itemize{
+    \item Add support for TikZ graphics.
+  }
+}
+
 \section{Changes in version 0.2-1}{
   \itemize{
     \item Add FontConfig files into more than one directory to be
