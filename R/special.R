@@ -6,8 +6,8 @@ ignoreSpecial <- function(op) {}
 
 specialHandler <- function(init=function() {},
                            metric=ignoreSpecial,
-                           grob=ignoreSpecial) {
-    structure(list(init=init, metric=metric, grob=grob),
+                           grid=ignoreSpecial) {
+    structure(list(init=init, metric=metric, grid=grid),
               class="DVIRspecial")
 }
 
@@ -23,7 +23,73 @@ specialInit <- function() {
 }
 
 ## Update the location and bounding box for the figure
+
+## NOTE that all moves have to update h/v
+## BUT only drawing should update bbox
+
+## NOTE also that during the metric run we only have DVI locations in "mm";
+## we have not yet set up the viewport with correct "native" coordinates
+
+## NOTE also that the TikZ locations are in "pt"s
+
+metricMoveTo <- function(x) {
+    xy <- strsplit(x, ",")[[1]]
+    picX <- get("pictureX")
+    picY <- get("pictureY")
+    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[1]), "pt")))
+    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[2]), "pt")))
+}
+
+metricLineTo <- function(x) {
+    xy <- strsplit(x, ",")[[1]]
+    picX <- get("pictureX")
+    picY <- get("pictureY")
+    updateHoriz(get("h"))
+    updateVert(get("v"))
+    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[1]), "pt")))
+    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[2]), "pt")))
+    updateHoriz(get("h"))
+    updateVert(get("v"))
+}
+
+metricPathElement <- function(x) {
+    tokens <- strsplit(x, " ")[[1]]
+    switch(tokens[1],
+           moveto=metricMoveTo(tokens[-1]),
+           lineto=metricLineTo(tokens[-1]),
+           curveto=stop("not yet supported"),
+           stop("unsupported path element"))
+}
+
+metricSpecial <- function(x) {
+    ## Split by ": " (for paths)
+    tokens <- strsplit(gsub(" *$", "", x), ":")[[1]]
+    if (length(tokens) == 1) {
+        ## Nothing to do
+    } else {
+        ## Path
+        lapply(tokens, metricPathElement)
+        invisible()
+    }
+}
+
 specialMetric <- function(op) {
+    specialString <- gsub("dvir:: ", "",
+                          paste(blockValue(op$blocks$op.opparams.string),
+                                collapse=""))
+    if (grepl("^begin-picture", specialString)) {
+        x <- fromTeX(get("h"))
+        y <- fromTeX(get("v"))
+        set("pictureX", x)
+        set("pictureY", y)
+        set("inPicture", TRUE)
+    } else if (grepl("^end-picture", specialString)) {
+        set("inPicture", FALSE)
+    } else {
+        if (get("inPicture")) {
+            metricSpecial(specialString)
+        }
+    }
 }
 
 ## Generate a grob (gTree) for the figure
@@ -47,7 +113,7 @@ parseLineTo <- function(x) {
     set("pathY", c(get("pathY"), as.numeric(xy[2])))
 }
 
-handlePathElement <- function(x) {
+drawPathElement <- function(x) {
     tokens <- strsplit(x, " ")[[1]]
     switch(tokens[1],
            moveto=parseMoveTo(tokens[-1]),
@@ -56,12 +122,12 @@ handlePathElement <- function(x) {
            stop("unsupported path element"))
 }
 
-handleNewPath <- function() {
+drawNewPath <- function() {
     set("pathX", NULL)
     set("pathY", NULL)
 }
 
-handleStroke <- function() {
+drawStroke <- function() {
     picX <- get("pictureX")
     picY <- get("pictureY")
     pathX <- get("pathX")
@@ -99,7 +165,7 @@ parseSetting <- function(x) {
            stop("unsupported setting"))
 }
 
-handleBeginScope <- function(x) {
+drawBeginScope <- function(x) {
     if (length(x) == 0) {
         gp <- gpar()
     } else {
@@ -116,32 +182,29 @@ handleBeginScope <- function(x) {
     pushViewport(vp)
 }
 
-handleEndScope <- function() {
+drawEndScope <- function() {
     popViewport()
 }
 
-handleSpecial <- function(x) {
+drawSpecial <- function(x) {
     ## Split by ": " (for paths)
     tokens <- strsplit(gsub(" *$", "", x), ":")[[1]]
     if (length(tokens) == 1) {
         tokens <- strsplit(gsub(" *$", "", tokens), " ")[[1]]
         switch(tokens[1],
-               `begin-scope`=handleBeginScope(tokens[-1]),
-               `end-scope`=handleEndScope(),
-               `new-path`=handleNewPath(),
-               `stroke`=handleStroke(),
+               `begin-scope`=drawBeginScope(tokens[-1]),
+               `end-scope`=drawEndScope(),
+               `new-path`=drawNewPath(),
+               `stroke`=drawStroke(),
                stop("Unsupported TikZ special"))
     } else {
         ## Path
-        lapply(tokens, handlePathElement)
+        lapply(tokens, drawPathElement)
         invisible()
     }
 }
 
-specialGrob <- function(op) {
-    ## <picture> means init buffer
-    ## </picture> means parse buffer
-    ## Otherwise, accumulate buffer
+gridSpecial <- function(op) {
     specialString <- gsub("dvir:: ", "",
                           paste(blockValue(op$blocks$op.opparams.string),
                                 collapse=""))
@@ -170,14 +233,14 @@ specialGrob <- function(op) {
     } else {
         if (get("inPicture")) {
             ## "draw" special off screen 
-            handleSpecial(specialString)
+            drawSpecial(specialString)
         }
     }
 }
 
 dvirSpecial <- specialHandler(init=specialInit,
                               metric=specialMetric,
-                              grob=specialGrob)
+                              grid=gridSpecial)
 
                            
 grid.tikz <- function(...) {

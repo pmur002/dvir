@@ -1,6 +1,10 @@
 
 ## Run through DVI and extract useful info
 
+## NOTE that h/v are updated by ALL ops
+## BUT bbox is only updated before/after chars
+## (i.e., bbox only measures ink)
+
 updateHoriz <- function(x) {
     right <- get("right")
     if (!is.finite(right) || x > right) {
