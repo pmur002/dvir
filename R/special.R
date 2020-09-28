@@ -37,24 +37,37 @@ vpNameGen <- function() {
 vpName <- vpNameGen()
 
 parseMoveTo <- function(x) {
-    xml_attrs(x)
+    xy <- strsplit(x, ",")[[1]]
+    set("pathX", as.numeric(xy[1]))
+    set("pathY", as.numeric(xy[2]))
 }
-parseLineTo <- parseMoveTo
+parseLineTo <- function(x) {
+    xy <- strsplit(x, ",")[[1]]
+    set("pathX", c(get("pathX"), as.numeric(xy[1])))
+    set("pathY", c(get("pathY"), as.numeric(xy[2])))
+}
 
-parseLocn <- function(x) {
-    switch(xml_name(x),
-           moveto=parseMoveTo(x),
-           lineto=parseLineTo(x),
+handlePathElement <- function(x) {
+    tokens <- strsplit(x, " ")[[1]]
+    switch(tokens[1],
+           moveto=parseMoveTo(tokens[-1]),
+           lineto=parseLineTo(tokens[-1]),
            curveto=stop("not yet supported"),
            stop("unsupported path element"))
 }
 
-parseStroke <- function(x) {
-    xy <- do.call(rbind, lapply(xml_children(x), parseLocn))
+handleNewPath <- function() {
+    set("pathX", NULL)
+    set("pathY", NULL)
+}
+
+handleStroke <- function() {
     picX <- get("pictureX")
     picY <- get("pictureY")
-    polylineGrob(x=unit(picX, "native") + unit(xy[,1], "pt"),
-                 y=unit(picY, "native") + unit(xy[,2], "pt"))
+    pathX <- get("pathX")
+    pathY <- get("pathY")
+    grid.polyline(x=unit(picX, "native") + unit(pathX, "pt"),
+                  y=unit(picY, "native") + unit(pathY, "pt"))    
 }
 
 parseValueWithUnit <- function(x) {
@@ -75,87 +88,89 @@ parseLineDash <- function(x) {
     }
 }
 
-parseSetting <- function(name, value) {
+parseSetting <- function(x) {
+    name <- x[1]
+    value <- x[2]
     switch(name,
            stroke=eval(str2lang(value)),
            fill=eval(str2lang(value)),
-           `line-width`=96*parseValueWithUnit(value),
-           `line-dash`=parseLineDash(value),
+           lwd=96*parseValueWithUnit(value),
+           lty=parseLineDash(value),
            stop("unsupported setting"))
 }
 
-settingNames <- c(col="stroke", fill="fill", lwd="line-width", lty="line-dash")
-parseSettingNames <- function(x) {
-    index <- match(x, settingNames)
-    if (any(is.na(index))) 
-        stop(paste0("unsupported setting name (", index[is.na(index)], ")"))
-    names(settingNames)[index]
-}
-
-## A <g> corresponds to a scope, so create a viewport
-## and then parse the content, with the viewport as context
-parseG <- function(x) {
-    children <- xml_children(x)
-    if (length(children)) {
-        attrs <- xml_attrs(x)
-        attrNames <- names(attrs)
-        settings <- mapply(parseSetting, attrNames, attrs, SIMPLIFY=FALSE)
-        names(settings) <- parseSettingNames(attrNames)
-        vpName <- vpName()
-        topvp <- get("viewport")
-        vp <- viewport(gp=do.call(gpar, settings),
-                       xscale=topvp$xscale, yscale=topvp$yscale,
-                       name=vpName)
-        gTree(vp=vp,
-              children=do.call(gList,
-                               lapply(xml_children(x), parseElement)))
+handleBeginScope <- function(x) {
+    if (length(x) == 0) {
+        gp <- gpar()
+    } else {
+        tokens <- strsplit(x, "=")
+        names <- sapply(tokens, "[", 1)
+        values <- lapply(tokens, parseSetting)
+        names(values) <- names
+        gp <- do.call(gpar, values)
     }
+    topvp <- get("viewport")
+    vp <- viewport(gp=gp,
+                   xscale=topvp$xscale, yscale=topvp$yscale,
+                   name=vpName())
+    pushViewport(vp)
 }
 
-parseElement <- function(x) {
-    switch(xml_name(x),
-           g=parseG(x),
-           stroke=parseStroke(x),
-           stop("Unsupported TikZ special"))
+handleEndScope <- function() {
+    popViewport()
 }
 
-parseDVIX <- function(x) {
-    xml <- read_xml(x)
-    ## Root should be a <picture>
-    if (xml_name(xml_root(xml)) != "picture")
-        stop("Invalid TikZ special")
-    gTree(children=do.call(gList,
-                           lapply(xml_children(xml_root(xml)), parseElement)))
+handleSpecial <- function(x) {
+    ## Split by ": " (for paths)
+    tokens <- strsplit(gsub(" *$", "", x), ":")[[1]]
+    if (length(tokens) == 1) {
+        tokens <- strsplit(gsub(" *$", "", tokens), " ")[[1]]
+        switch(tokens[1],
+               `begin-scope`=handleBeginScope(tokens[-1]),
+               `end-scope`=handleEndScope(),
+               `new-path`=handleNewPath(),
+               `stroke`=handleStroke(),
+               stop("Unsupported TikZ special"))
+    } else {
+        ## Path
+        lapply(tokens, handlePathElement)
+        invisible()
+    }
 }
 
 specialGrob <- function(op) {
     ## <picture> means init buffer
     ## </picture> means parse buffer
     ## Otherwise, accumulate buffer
-    specialString <- gsub("dvix:: ", "",
+    specialString <- gsub("dvir:: ", "",
                           paste(blockValue(op$blocks$op.opparams.string),
                                 collapse=""))
-    if (specialString == "<picture>") {
+    if (grepl("^begin-picture", specialString)) {
         x <- fromTeX(get("h"))
         y <- fromTeX(get("v"))
         set("pictureX", x)
         set("pictureY", y)
         set("inPicture", TRUE)
-        buffer <- file(open="w+")
-        writeLines(specialString, buffer)
-        set("specialBuffer", buffer)
-    } else if (specialString == "</picture>") {
+        ## Save main off-screen device 
+        set("savedDevice", get("dvirDevice"))
+        ## Create off-screen device for this picture
+        pdf(NULL)
+        set("dvirDevice", dev.cur())
+    } else if (grepl("^end-picture", specialString)) {
+        ## Capture the resulting gTree
+        gTree <- grid.grab()
+        ## Close the off-screen device for this picture
+        dev.off()
+        ## Restore current device
+        set("dvirDevice", get("savedDevice"))
+        dev.set(get("dvirDevice"))
+        ## "draw" gTree on current device
+        grid.draw(gTree)
         set("inPicture", FALSE)
-        buffer <- get("specialBuffer")
-        writeLines(specialString, buffer)
-        specialDVIX <- paste(readLines(buffer), collapse="")
-        close(buffer)
-        parseDVIX(specialDVIX)
     } else {
         if (get("inPicture")) {
-            buffer <- get("specialBuffer")
-            writeLines(specialString, buffer)
-            set("specialBuffer", buffer)
+            ## "draw" special off screen 
+            handleSpecial(specialString)
         }
     }
 }
@@ -165,3 +180,9 @@ dvirSpecial <- specialHandler(init=specialInit,
                               grob=specialGrob)
 
                            
+grid.tikz <- function(...) {
+    grid.latex(...,
+               preamble=getOption("tikz.preamble"),
+               postamble=getOption("dvir.postamble"),
+               engine=engine("latex", special=dvirSpecial))
+}
