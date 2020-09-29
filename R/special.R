@@ -34,6 +34,7 @@ specialInit <- function() {
 
 metricMoveTo <- function(x) {
     xy <- strsplit(x, ",")[[1]]
+    ## Move
     picX <- get("pictureX")
     picY <- get("pictureY")
     set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[1]), "pt")))
@@ -42,14 +43,47 @@ metricMoveTo <- function(x) {
 
 metricLineTo <- function(x) {
     xy <- strsplit(x, ",")[[1]]
+    ## Update bbox for start point
+    updateHoriz(get("h"))
+    updateVert(get("v"))
+    ## Move to end point
     picX <- get("pictureX")
     picY <- get("pictureY")
-    updateHoriz(get("h"))
-    updateVert(get("v"))
     set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[1]), "pt")))
     set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[2]), "pt")))
+    ## Update bbox for end point
     updateHoriz(get("h"))
     updateVert(get("v"))
+}
+
+metricCurveTo <- function(x) {
+    xy <- strsplit(x, ",")[[1]]
+    ## Update bbox for start point
+    updateHoriz(get("h"))
+    updateVert(get("v"))
+    ## Update bbox to include curve extent
+    picX <- get("pictureX")
+    picY <- get("pictureY")
+    startX <- fromTeX(get("h")) - picX
+    startY <- fromTeX(get("v")) - picY
+    bg <- gridBezier::BezierGrob(x=unit(picX, "mm") +
+                                     unit(c(startX, xy[c(1, 3, 5)]),
+                                          units=c("mm", rep("pt", 3))),
+                                 y=unit(picY, "mm") +
+                                     unit(c(startY, xy[c(2, 4, 6)]),
+                                          units=c("mm", rep("pt", 3))))
+    pts <- gridBezier::BezierPoints(bg)
+    l <- min(pts$x)
+    r <- max(pts$x)
+    b <- min(pts$y)
+    t <- max(pts$y)
+    updateHoriz(xtoTeX(unit(l, "in")))
+    updateHoriz(xtoTeX(unit(r, "in")))
+    updateVert(ytoTeX(unit(b, "in")))
+    updateVert(ytoTeX(unit(t, "in")))
+    ## Move to end of curve
+    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[5]), "pt")))
+    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[6]), "pt")))
 }
 
 metricPathElement <- function(x) {
@@ -57,7 +91,7 @@ metricPathElement <- function(x) {
     switch(tokens[1],
            moveto=metricMoveTo(tokens[-1]),
            lineto=metricLineTo(tokens[-1]),
-           curveto=stop("not yet supported"),
+           curveto=metricCurveTo(tokens[-1]),
            stop("unsupported path element"))
 }
 
@@ -106,11 +140,42 @@ parseMoveTo <- function(x) {
     xy <- strsplit(x, ",")[[1]]
     set("pathX", as.numeric(xy[1]))
     set("pathY", as.numeric(xy[2]))
+    ## Move 
+    picX <- get("pictureX")
+    picY <- get("pictureY")
+    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[1]), "pt")))
+    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[2]), "pt")))
 }
 parseLineTo <- function(x) {
     xy <- strsplit(x, ",")[[1]]
     set("pathX", c(get("pathX"), as.numeric(xy[1])))
     set("pathY", c(get("pathY"), as.numeric(xy[2])))
+    ## Move to end of line
+    picX <- get("pictureX")
+    picY <- get("pictureY")
+    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[1]), "pt")))
+    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[2]), "pt")))
+}
+
+parseCurveTo <- function(x) {
+    xy <- strsplit(x, ",")[[1]]
+    pathX <- get("pathX")
+    startX <- pathX[length(pathX)]
+    pathY <- get("pathY")
+    startY <- pathY[length(pathY)]    
+    ## Convert Bezier to polyline
+    bg <- gridBezier::BezierGrob(x=unit(c(startX, xy[c(1, 3, 5)]), units="pt"),
+                                 y=unit(c(startY, xy[c(2, 4, 6)]), units="pt"))
+    pts <- gridBezier::BezierPoints(bg)
+    set("pathX",
+        c(get("pathX"), convertX(unit(pts$x[-1], "in"), "pt", valueOnly=TRUE)))
+    set("pathY",
+        c(get("pathY"), convertY(unit(pts$y[-1], "in"), "pt", valueOnly=TRUE)))
+    ## Move to end of curve
+    picX <- get("pictureX")
+    picY <- get("pictureY")
+    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[5]), "pt")))
+    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[6]), "pt")))
 }
 
 drawPathElement <- function(x) {
@@ -118,7 +183,7 @@ drawPathElement <- function(x) {
     switch(tokens[1],
            moveto=parseMoveTo(tokens[-1]),
            lineto=parseLineTo(tokens[-1]),
-           curveto=stop("not yet supported"),
+           curveto=parseCurveTo(tokens[-1]),
            stop("unsupported path element"))
 }
 
@@ -158,7 +223,7 @@ parseSetting <- function(x) {
     name <- x[1]
     value <- x[2]
     switch(name,
-           stroke=eval(str2lang(value)),
+           col=eval(str2lang(value)),
            fill=eval(str2lang(value)),
            lwd=96*parseValueWithUnit(value),
            lty=parseLineDash(value),

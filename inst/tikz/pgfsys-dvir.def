@@ -217,25 +217,25 @@
 
 \def\pgfsys@color@rgb@stroke#1#2#3{%
   \pgf@sys@dvir@color@rgb#1,#2,#3\relax%
-  \pgf@sys@dvir@gs@color{stroke=\pgf@sys@dvir@prepared}}
+  \pgf@sys@dvir@gs@color{col=\pgf@sys@dvir@prepared}}
 \def\pgfsys@color@rgb@fill#1#2#3{%
   \pgf@sys@dvir@color@rgb#1,#2,#3\relax%
   \pgf@sys@dvir@gs@color{fill=\pgf@sys@dvir@prepared}}
 \def\pgfsys@color@cmyk@stroke#1#2#3#4{%
   \pgf@sys@dvir@color@cmyk#1,#2,#3,#4\relax%
-  \pgf@sys@dvir@gs@color{stroke=\pgf@sys@dvir@prepared}}
+  \pgf@sys@dvir@gs@color{col=\pgf@sys@dvir@prepared}}
 \def\pgfsys@color@cmyk@fill#1#2#3#4{%
   \pgf@sys@dvir@color@cmyk#1,#2,#3,#4\relax%
   \pgf@sys@dvir@gs@color{fill=\pgf@sys@dvir@prepared}}
 \def\pgfsys@color@cmy@stroke#1#2#3{%
   \pgf@sys@dvir@color@cmy#1,#2,#3\relax%
-  \pgf@sys@dvir@gs@color{stroke=\pgf@sys@dvir@prepared}}
+  \pgf@sys@dvir@gs@color{col=\pgf@sys@dvir@prepared}}
 \def\pgfsys@color@cmy@fill#1#2#3{%
   \pgf@sys@dvir@color@cmy#1,#2,#3\relax%
   \pgf@sys@dvir@gs@color{fill=\pgf@sys@dvir@prepared}}
 \def\pgfsys@color@gray@stroke#1{%
   \pgf@sys@dvir@color@gray#1\relax%
-  \pgf@sys@dvir@gs@color{stroke=\pgf@sys@dvir@prepared}}
+  \pgf@sys@dvir@gs@color{col=\pgf@sys@dvir@prepared}}
 \def\pgfsys@color@gray@fill#1{%
   \pgf@sys@dvir@color@gray#1\relax%
   \pgf@sys@dvir@gs@color{fill=\pgf@sys@dvir@prepared}}
