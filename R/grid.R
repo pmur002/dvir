@@ -70,8 +70,9 @@ gridRule <- function(op) {
 }
 
 grid_op_132 <- function(op) {
-    op_set_rule(op)
+    ## Draw first because op_set_rule modifies h
     gridRule(op)
+    op_set_rule(op)
 }
 
 ## put_rule
