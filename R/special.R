@@ -37,35 +37,35 @@ metricMoveTo <- function(x) {
     ## Move
     left <- get("pictureLeft")
     bottom <- get("pictureBottom")
-    set("h", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[1]), "pt")))
-    set("v", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[2]), "pt")))
+    set("pictureX", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[1]), "pt")))
+    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[2]), "pt")))
 }
 
 metricLineTo <- function(x) {
     xy <- strsplit(x, ",")[[1]]
     ## Update bbox for start point
-    updateHoriz(get("h"))
-    updateVert(get("v"))
+    updateHoriz(get("pictureX"))
+    updateVert(get("pictureY"))
     ## Move to end point
     left <- get("pictureLeft")
     bottom <- get("pictureBottom")
-    set("h", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[1]), "pt")))
-    set("v", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[2]), "pt")))
+    set("pictureX", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[1]), "pt")))
+    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[2]), "pt")))
     ## Update bbox for end point
-    updateHoriz(get("h"))
-    updateVert(get("v"))
+    updateHoriz(get("pictureX"))
+    updateVert(get("pictureY"))
 }
 
 metricCurveTo <- function(x) {
     xy <- strsplit(x, ",")[[1]]
     ## Update bbox for start point
-    updateHoriz(get("h"))
-    updateVert(get("v"))
+    updateHoriz(get("pictureX"))
+    updateVert(get("pictureY"))
     ## Update bbox to include curve extent
     left <- get("pictureLeft")
     bottom <- get("pictureBottom")
-    startX <- fromTeX(get("h")) - left
-    startY <- fromTeX(get("v")) - bottom
+    startX <- fromTeX(get("pictureX")) - left
+    startY <- fromTeX(get("pictureY")) - bottom
     bg <- gridBezier::BezierGrob(x=unit(left, "mm") +
                                      unit(c(startX, xy[c(1, 3, 5)]),
                                           units=c("mm", rep("pt", 3))),
@@ -82,8 +82,8 @@ metricCurveTo <- function(x) {
     updateVert(ytoTeX(unit(b, "in")))
     updateVert(ytoTeX(unit(t, "in")))
     ## Move to end of curve
-    set("h", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[5]), "pt")))
-    set("v", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[6]), "pt")))
+    set("pictureX", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[5]), "pt")))
+    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[6]), "pt")))
 }
 
 metricPathElement <- function(x) {
@@ -116,11 +116,11 @@ metricTransform <- function(x) {
     left <- get("pictureLeft")
     bottom <- get("pictureBottom")
     ## Move to location of text
-    set("h", xtoTeX(unit(left, "mm") + unit(trans$tr[1], "pt")))
-    set("v", ytoTeX(unit(bottom, "mm") + unit(trans$tr[2], "pt")))
+    set("pictureX", xtoTeX(unit(left, "mm") + unit(trans$tr[1], "pt")))
+    set("pictureY", ytoTeX(unit(bottom, "mm") + unit(trans$tr[2], "pt")))
     ## Update bbox for location of text
-    updateHoriz(get("h"))
-    updateVert(get("v"))
+    updateHoriz(get("pictureX"))
+    updateVert(get("pictureY"))
 }
 
 metricSpecial <- function(x) {
@@ -149,10 +149,14 @@ specialMetric <- function(op) {
                           paste(blockValue(op$blocks$op.opparams.string),
                                 collapse=""))
     if (grepl("^begin-picture", specialString)) {
-        x <- fromTeX(get("h"))
-        y <- fromTeX(get("v"))
+        h <- get("h")
+        v <- get("v")
+        x <- fromTeX(h)
+        y <- fromTeX(v)
         set("pictureLeft", x)
         set("pictureBottom", y)
+        set("pictureX", h)
+        set("pictureY", v)
         set("inPicture", TRUE)
     } else if (grepl("^end-picture", specialString)) {
         set("inPicture", FALSE)
