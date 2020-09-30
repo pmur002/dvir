@@ -47,7 +47,7 @@ gridRule <- function(op) {
             grid.segments(x + width/2,
                           y,
                           x + width/2,
-                          y + height,
+                          y - height,
                           default.units="native",
                           gp=gpar(lwd=72*width/25.4,
                                   lineend="butt"))
@@ -55,12 +55,12 @@ gridRule <- function(op) {
             grid.segments(x,
                           y + height/2,
                           x + width,
-                          y + height/2,
+                          y - height/2,
                           default.units="native",
                           gp=gpar(lwd=72*height/25.4,
                                   lineend="butt"))
         } else {
-            grid.rect(x, y, width, height, default.units="native",
+            grid.rect(x, y, width, -height, default.units="native",
                       just=c("left", "bottom"),
                       gp=gpar(col=NA, fill="black"))
         }
@@ -164,7 +164,7 @@ op2grid <- function(op) {
     base::get(paste0("grid_op_", opcode))(op)
 }
 
-dvigrid <- function(x, device, engine, scale=1) {
+dvigrid <- function(x, device, engine, vp, scale=1) {
     set("device", device)
     set("engine", engine)
     set("scale", scale)
@@ -173,8 +173,11 @@ dvigrid <- function(x, device, engine, scale=1) {
     ## Create off-screen device
     pdf(NULL)
     set("dvirDevice", dev.cur())
+    ## Set up main viewport
+    pushViewport(vp)
     ## "draw" dvi output off screen
     invisible(lapply(x, op2grid))
+    popViewport()
     ## Capture the resulting gTree
     gTree <- grid.grab()
     ## Close the off-screen device
@@ -232,8 +235,8 @@ dviGrob.DVI <- function(dvi,
                    yscale=c(metrics$bottom, metrics$top),
                    name="dvi.vp")
     set("viewport", vp)
-    grobs <- dvigrid(dvi, device, engine)
-    gTree(children=gList(grobs), fonts=fonts, vp=vp, name=name, cl="DVIgrob")
+    grobs <- dvigrid(dvi, device, engine, vp)
+    gTree(children=gList(grobs), fonts=fonts, name=name, cl="DVIgrob")
 }
 
 grid.dvi <- function(...) {

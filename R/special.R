@@ -65,18 +65,18 @@ metricCurveTo <- function(x) {
     left <- get("pictureLeft")
     bottom <- get("pictureBottom")
     startX <- fromTeX(get("pictureX")) - left
-    startY <- fromTeX(get("pictureY")) - bottom
+    startY <- bottom - fromTeX(get("pictureY"))
     bg <- gridBezier::BezierGrob(x=unit(left, "mm") +
                                      unit(c(startX, xy[c(1, 3, 5)]),
                                           units=c("mm", rep("pt", 3))),
-                                 y=unit(bottom, "mm") +
+                                 y=unit(bottom, "mm") -
                                      unit(c(startY, xy[c(2, 4, 6)]),
                                           units=c("mm", rep("pt", 3))))
     pts <- gridBezier::BezierPoints(bg)
     l <- min(pts$x)
     r <- max(pts$x)
-    b <- min(pts$y)
-    t <- max(pts$y)
+    b <- max(pts$y)
+    t <- min(pts$y)
     updateHoriz(xtoTeX(unit(l, "in")))
     updateHoriz(xtoTeX(unit(r, "in")))
     updateVert(ytoTeX(unit(b, "in")))
@@ -117,7 +117,7 @@ metricTransform <- function(x) {
     bottom <- get("pictureBottom")
     ## Move to location of text
     set("pictureX", xtoTeX(unit(left, "mm") + unit(trans$tr[1], "pt")))
-    set("pictureY", ytoTeX(unit(bottom, "mm") + unit(trans$tr[2], "pt")))
+    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(trans$tr[2], "pt")))
     ## Update bbox for location of text
     updateHoriz(get("pictureX"))
     updateVert(get("pictureY"))
