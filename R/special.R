@@ -287,7 +287,7 @@ drawTransform <- function(x) {
     pushViewport(viewport(x=unit(left, "native") + unit(trans$tr[1], "pt"),
                           y=unit(bottom, "native") + unit(trans$tr[2], "pt"),
                           just=c("left", "bottom"),
-                          angle=trans$rot,
+                          angle=trans$rot/pi*180,
                           ## Scale so that text drawn at bottom-left
                           xscale=fromTeX(h) + 0:1,
                           yscale=fromTeX(v) + 0:1))
