@@ -199,9 +199,9 @@ parseLineTo <- function(x, i) {
 parseCurveTo <- function(x, i) {
     xy <- strsplit(x, ",")[[1]]
     pathX <- get("pathX")
-    startX <- pathX[[i - 1]][length(pathX[i - 1])]
+    startX <- pathX[[i - 1]][length(pathX[[i - 1]])]
     pathY <- get("pathY")
-    startY <- pathY[[i - 1]][length(pathY[i - 1])]    
+    startY <- pathY[[i - 1]][length(pathY[[i - 1]])]    
     ## Convert Bezier to polyline
     bg <- gridBezier::BezierGrob(x=unit(c(startX, xy[c(1, 3, 5)]), units="pt"),
                                  y=unit(c(startY, xy[c(2, 4, 6)]), units="pt"))
