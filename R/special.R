@@ -35,10 +35,10 @@ specialInit <- function() {
 metricMoveTo <- function(x) {
     xy <- strsplit(x, ",")[[1]]
     ## Move
-    picX <- get("pictureX")
-    picY <- get("pictureY")
-    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[1]), "pt")))
-    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[2]), "pt")))
+    left <- get("pictureLeft")
+    bottom <- get("pictureBottom")
+    set("h", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[1]), "pt")))
+    set("v", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[2]), "pt")))
 }
 
 metricLineTo <- function(x) {
@@ -47,10 +47,10 @@ metricLineTo <- function(x) {
     updateHoriz(get("h"))
     updateVert(get("v"))
     ## Move to end point
-    picX <- get("pictureX")
-    picY <- get("pictureY")
-    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[1]), "pt")))
-    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[2]), "pt")))
+    left <- get("pictureLeft")
+    bottom <- get("pictureBottom")
+    set("h", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[1]), "pt")))
+    set("v", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[2]), "pt")))
     ## Update bbox for end point
     updateHoriz(get("h"))
     updateVert(get("v"))
@@ -62,14 +62,14 @@ metricCurveTo <- function(x) {
     updateHoriz(get("h"))
     updateVert(get("v"))
     ## Update bbox to include curve extent
-    picX <- get("pictureX")
-    picY <- get("pictureY")
-    startX <- fromTeX(get("h")) - picX
-    startY <- fromTeX(get("v")) - picY
-    bg <- gridBezier::BezierGrob(x=unit(picX, "mm") +
+    left <- get("pictureLeft")
+    bottom <- get("pictureBottom")
+    startX <- fromTeX(get("h")) - left
+    startY <- fromTeX(get("v")) - bottom
+    bg <- gridBezier::BezierGrob(x=unit(left, "mm") +
                                      unit(c(startX, xy[c(1, 3, 5)]),
                                           units=c("mm", rep("pt", 3))),
-                                 y=unit(picY, "mm") +
+                                 y=unit(bottom, "mm") +
                                      unit(c(startY, xy[c(2, 4, 6)]),
                                           units=c("mm", rep("pt", 3))))
     pts <- gridBezier::BezierPoints(bg)
@@ -82,8 +82,8 @@ metricCurveTo <- function(x) {
     updateVert(ytoTeX(unit(b, "in")))
     updateVert(ytoTeX(unit(t, "in")))
     ## Move to end of curve
-    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[5]), "pt")))
-    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[6]), "pt")))
+    set("h", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[5]), "pt")))
+    set("v", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[6]), "pt")))
 }
 
 metricPathElement <- function(x) {
@@ -95,11 +95,48 @@ metricPathElement <- function(x) {
            stop("unsupported path element"))
 }
 
+## Like the drawing, this transform handling is VERY limited at present
+## Based on assumption that canvas transforms are only being used
+## to locate (and possibly rotate) text (nodes) AND that there will only
+## be one such transform in effect at once.
+## Furthermore, figuring out the impact of the (possibly rotated) text label
+## on the bounding box is too hard (at least at present) so just add
+## the transform (label) origin to the bounding box
+## (interesting to note that it does not appear that labels are included
+##  in the bounding box for TikZ postscript output either !?)
+metricTransform <- function(x) {
+    tokens <- as.numeric(strsplit(x, ",")[[1]])
+    m <- rbind(c(tokens[1], tokens[3], tokens[5]),
+               c(tokens[2], tokens[4], tokens[6]))
+    trans <- decompose(m)
+    if (any(trans$sk != 0) || any(round(trans$sc, 2) != 1))
+        warning(paste("Scaling and/or skew in canvas transform;",
+                      "this will not end well"))
+    ## Transform is relative to picture bottom-left
+    left <- get("pictureLeft")
+    bottom <- get("pictureBottom")
+    ## Move to location of text
+    set("h", xtoTeX(unit(left, "mm") + unit(trans$tr[1], "pt")))
+    set("v", ytoTeX(unit(bottom, "mm") + unit(trans$tr[2], "pt")))
+    ## Update bbox for location of text
+    updateHoriz(get("h"))
+    updateVert(get("v"))
+}
+
 metricSpecial <- function(x) {
     ## Split by ": " (for paths)
     tokens <- strsplit(gsub(" *$", "", x), ":")[[1]]
     if (length(tokens) == 1) {
-        ## Nothing to do
+        ## Nothing to do ...
+        ## APART from transform
+        tokens <- strsplit(gsub(" *$", "", tokens), " ")[[1]]
+        switch(tokens[1],
+               `transform`=metricTransform(tokens[-1]),
+               `begin-scope`=,
+               `end-scope`=,
+               `new-path`=,
+               `stroke`={},
+               stop("Unsupported TikZ special"))
     } else {
         ## Path
         lapply(tokens, metricPathElement)
@@ -114,8 +151,8 @@ specialMetric <- function(op) {
     if (grepl("^begin-picture", specialString)) {
         x <- fromTeX(get("h"))
         y <- fromTeX(get("v"))
-        set("pictureX", x)
-        set("pictureY", y)
+        set("pictureLeft", x)
+        set("pictureBottom", y)
         set("inPicture", TRUE)
     } else if (grepl("^end-picture", specialString)) {
         set("inPicture", FALSE)
@@ -136,54 +173,47 @@ vpNameGen <- function() {
 }
 vpName <- vpNameGen()
 
-parseMoveTo <- function(x) {
-    xy <- strsplit(x, ",")[[1]]
-    set("pathX", as.numeric(xy[1]))
-    set("pathY", as.numeric(xy[2]))
-    ## Move 
-    picX <- get("pictureX")
-    picY <- get("pictureY")
-    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[1]), "pt")))
-    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[2]), "pt")))
-}
-parseLineTo <- function(x) {
-    xy <- strsplit(x, ",")[[1]]
-    set("pathX", c(get("pathX"), as.numeric(xy[1])))
-    set("pathY", c(get("pathY"), as.numeric(xy[2])))
-    ## Move to end of line
-    picX <- get("pictureX")
-    picY <- get("pictureY")
-    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[1]), "pt")))
-    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[2]), "pt")))
-}
-
-parseCurveTo <- function(x) {
+parseMoveTo <- function(x, i) {
     xy <- strsplit(x, ",")[[1]]
     pathX <- get("pathX")
-    startX <- pathX[length(pathX)]
     pathY <- get("pathY")
-    startY <- pathY[length(pathY)]    
+    pathX[[i]] <- as.numeric(xy[1])
+    pathY[[i]] <- as.numeric(xy[2])
+    set("pathX", pathX)
+    set("pathY", pathY)
+}
+parseLineTo <- function(x, i) {
+    xy <- strsplit(x, ",")[[1]]
+    pathX <- get("pathX")
+    pathY <- get("pathY")
+    pathX[[i]] <- as.numeric(xy[1])
+    pathY[[i]] <- as.numeric(xy[2])
+    set("pathX", pathX)
+    set("pathY", pathY)
+}
+
+parseCurveTo <- function(x, i) {
+    xy <- strsplit(x, ",")[[1]]
+    pathX <- get("pathX")
+    startX <- pathX[[i - 1]][length(pathX[i - 1])]
+    pathY <- get("pathY")
+    startY <- pathY[[i - 1]][length(pathY[i - 1])]    
     ## Convert Bezier to polyline
     bg <- gridBezier::BezierGrob(x=unit(c(startX, xy[c(1, 3, 5)]), units="pt"),
                                  y=unit(c(startY, xy[c(2, 4, 6)]), units="pt"))
     pts <- gridBezier::BezierPoints(bg)
-    set("pathX",
-        c(get("pathX"), convertX(unit(pts$x[-1], "in"), "pt", valueOnly=TRUE)))
-    set("pathY",
-        c(get("pathY"), convertY(unit(pts$y[-1], "in"), "pt", valueOnly=TRUE)))
-    ## Move to end of curve
-    picX <- get("pictureX")
-    picY <- get("pictureY")
-    set("h", xtoTeX(unit(picX, "mm") + unit(as.numeric(xy[5]), "pt")))
-    set("v", ytoTeX(unit(picY, "mm") - unit(as.numeric(xy[6]), "pt")))
+    pathX[[i]] <- convertX(unit(pts$x[-1], "in"), "pt", valueOnly=TRUE)
+    pathY[[i]] <- convertY(unit(pts$y[-1], "in"), "pt", valueOnly=TRUE)
+    set("pathX", pathX)
+    set("pathY", pathY)
 }
 
-drawPathElement <- function(x) {
+drawPathElement <- function(x, i) {
     tokens <- strsplit(x, " ")[[1]]
     switch(tokens[1],
-           moveto=parseMoveTo(tokens[-1]),
-           lineto=parseLineTo(tokens[-1]),
-           curveto=parseCurveTo(tokens[-1]),
+           moveto=parseMoveTo(tokens[-1], i),
+           lineto=parseLineTo(tokens[-1], i),
+           curveto=parseCurveTo(tokens[-1], i),
            stop("unsupported path element"))
 }
 
@@ -193,12 +223,71 @@ drawNewPath <- function() {
 }
 
 drawStroke <- function() {
-    picX <- get("pictureX")
-    picY <- get("pictureY")
+    left <- get("pictureLeft")
+    bottom <- get("pictureBottom")
     pathX <- get("pathX")
     pathY <- get("pathY")
-    grid.polyline(x=unit(picX, "native") + unit(pathX, "pt"),
-                  y=unit(picY, "native") + unit(pathY, "pt"))    
+    grid.polyline(x=unit(left, "native") + unit(unlist(pathX), "pt"),
+                  y=unit(bottom, "native") + unit(unlist(pathY), "pt"))    
+}
+
+## Based on
+## https://math.stackexchange.com/questions/13150/extracting-rotation-scale-values-from-2d-transformation-matrix/13165#13165
+decompose <- function(m) {
+    a <- m[1]
+    b <- m[2]
+    c <- m[3]
+    d <- m[4]
+    e <- m[5]
+    f <- m[6]
+    
+    delta <- a*d - b*c
+
+    translation <- c(e, f)
+    ## Apply the QR-like decomposition.
+    if (a != 0 || b != 0) {
+        r <- sqrt(a*a + b*b)
+        rotation <- if (b > 0) acos(a/r) else -acos(a/r)
+        scale <- c(r, delta/r)
+        skew <- c(atan2((a*c + b*d), (r*r)), 0)
+    } else if (c != 0 || d != 0) {
+        s <- sqrt(c*c + d*d)
+        rotation <- pi/2 - if (d > 0) acos(-c/s) else -acos(c/s)
+        scale <- c(delta/s, s)
+        skew <- c(0, atan2((a*c + b*d), (s*s)))
+    } else {
+        ## a <- b <- c <- d <- 0
+        stop("Invalid transformation matrix")
+    }
+    list(tr=translation, rot=rotation, sc=scale, sk=skew)
+}
+
+## This transform handling is VERY limited at present
+## Based on assumption that canvas transforms are only being used
+## to locate (and possibly rotate) text (nodes) AND that there will only
+## be one such transform in effect at once.
+drawTransform <- function(x) {
+    tokens <- as.numeric(strsplit(x, ",")[[1]])
+    m <- rbind(c(tokens[1], tokens[3], tokens[5]),
+               c(tokens[2], tokens[4], tokens[6]))
+    trans <- decompose(m)
+    if (any(trans$sk != 0) || any(round(trans$sc, 2) != 1))
+        warning(paste("Scaling and/or skew in canvas transform;",
+                      "this will not end well"))
+    ## Transform is relative to picture bottom-left
+    left <- get("pictureLeft")
+    bottom <- get("pictureBottom")
+    ## Text is drawn relative to current DVI location
+    h <- get("h")
+    v <- get("v")
+    pushViewport(viewport(x=unit(left, "native") + unit(trans$tr[1], "pt"),
+                          y=unit(bottom, "native") + unit(trans$tr[2], "pt"),
+                          just=c("left", "bottom"),
+                          angle=trans$rot,
+                          ## Scale so that text drawn at bottom-left
+                          xscale=fromTeX(h) + 0:1,
+                          yscale=fromTeX(v) + 0:1))
+    set("textDepth", get("textDepth") + 1)
 }
 
 parseValueWithUnit <- function(x) {
@@ -248,6 +337,11 @@ drawBeginScope <- function(x) {
 }
 
 drawEndScope <- function() {
+    td <- get("textDepth")
+    if (td > 0) {
+        popViewport(td)
+        set("textDepth", 0)
+    }
     popViewport()
 }
 
@@ -261,10 +355,14 @@ drawSpecial <- function(x) {
                `end-scope`=drawEndScope(),
                `new-path`=drawNewPath(),
                `stroke`=drawStroke(),
+               `transform`=drawTransform(tokens[-1]),
                stop("Unsupported TikZ special"))
     } else {
         ## Path
-        lapply(tokens, drawPathElement)
+        n <- length(tokens)
+        set("pathX", list(n))
+        set("pathY", list(n))
+        mapply(drawPathElement, tokens, 1:n)
         invisible()
     }
 }
@@ -276,24 +374,11 @@ gridSpecial <- function(op) {
     if (grepl("^begin-picture", specialString)) {
         x <- fromTeX(get("h"))
         y <- fromTeX(get("v"))
-        set("pictureX", x)
-        set("pictureY", y)
+        set("pictureLeft", x)
+        set("pictureBottom", y)
+        set("textDepth", 0)
         set("inPicture", TRUE)
-        ## Save main off-screen device 
-        set("savedDevice", get("dvirDevice"))
-        ## Create off-screen device for this picture
-        pdf(NULL)
-        set("dvirDevice", dev.cur())
     } else if (grepl("^end-picture", specialString)) {
-        ## Capture the resulting gTree
-        gTree <- grid.grab()
-        ## Close the off-screen device for this picture
-        dev.off()
-        ## Restore current device
-        set("dvirDevice", get("savedDevice"))
-        dev.set(get("dvirDevice"))
-        ## "draw" gTree on current device
-        grid.draw(gTree)
         set("inPicture", FALSE)
     } else {
         if (get("inPicture")) {
