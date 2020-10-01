@@ -41,7 +41,7 @@ export("readDVI",
        "grid.dvi", "dviGrob",
 
        "grid.latex", "latexGrob",
-       "grid.tikz",
+       "grid.tikz", "grid.tikzpicture",
 
        "engine", "texEngine", "luatexEngine", # "xetexEngine",
        "noSpecial", "dvirSpecial",

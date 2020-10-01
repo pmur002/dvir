@@ -395,11 +395,17 @@ gridSpecial <- function(op) {
 dvirSpecial <- specialHandler(init=specialInit,
                               metric=specialMetric,
                               grid=gridSpecial)
-
                            
 grid.tikz <- function(...) {
     grid.latex(...,
                preamble=getOption("tikz.preamble"),
                postamble=getOption("dvir.postamble"),
+               engine=engine("latex", special=dvirSpecial))
+}
+
+grid.tikzpicture <- function(...) {
+    grid.latex(...,
+               preamble=getOption("tikzpicture.preamble"),
+               postamble=getOption("tikzpicture.postamble"),
                engine=engine("latex", special=dvirSpecial))
 }
