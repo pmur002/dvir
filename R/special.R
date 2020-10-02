@@ -442,15 +442,15 @@ tikzpicturePreamble <- function(packages=NULL) {
 grid.tikz <- function(tex, ...,
                       preamble=getOption("tikz.preamble"),
                       postamble=getOption("dvir.postamble"),
-                      texEngine=engine("latex", special=dvirSpecial)) {
+                      engine=TeXengine("latex", special=dvirSpecial)) {
     grid.latex(tex, ...,
-               preamble=preamble, postamble=postamble, engine=texEngine)
+               preamble=preamble, postamble=postamble, engine=engine)
 }
 
 grid.tikzpicture <- function(tex, ...,
                              preamble=getOption("tikzpicture.preamble"),
                              postamble=getOption("tikzpicture.postamble"),
-                             texEngine=engine("latex", special=dvirSpecial)) {
+                             engine=TeXengine("latex", special=dvirSpecial)) {
     grid.latex(tex, ...,
-               preamble=preamble, postamble=postamble, engine=texEngine)
+               preamble=preamble, postamble=postamble, engine=engine)
 }

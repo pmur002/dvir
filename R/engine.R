@@ -1,5 +1,5 @@
 
-engine <- function(engine, options="",
+TeXengine <- function(engine, options="",
                    readFonts=readFontInfo,
                    fontDef=defineFont,
                    charEnc=getChar,
@@ -13,12 +13,12 @@ engine <- function(engine, options="",
     engine
 }
 
-texEngine <- engine("latex")
+latexEngine <- TeXengine("latex")
 
-xetexEngine <- engine("xelatex", "-no-pdf")
+xetexEngine <- TeXengine("xelatex", "-no-pdf")
 
-luatexEngine <- engine("lualatex", "--output-format=dvi",
-                       readFonts=luaReadFontInfo,
-                       fontDef=luaDefineFont,
-                       charEnc=luaGetChar,
-                       charMetric=luaCharWidth)
+luatexEngine <- TeXengine("lualatex", "--output-format=dvi",
+                          readFonts=luaReadFontInfo,
+                          fontDef=luaDefineFont,
+                          charEnc=luaGetChar,
+                          charMetric=luaCharWidth)

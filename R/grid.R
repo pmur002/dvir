@@ -204,7 +204,7 @@ dviGrob.character <- function(dvi,
                               rot=0,
                               device=names(dev.cur()),
                               name=NULL,
-                              engine=texEngine,
+                              engine=latexEngine,
                               ...) {
     dviGrob(readDVI(dvi), x, y, default.units, just, rot, device, name, engine)
 }
@@ -215,7 +215,7 @@ dviGrob.DVI <- function(dvi,
                         rot=0,
                         device=names(dev.cur()),
                         name=NULL,
-                        engine=texEngine,
+                        engine=latexEngine,
                         ...) {
     if (!is.unit(x))
         x <- unit(x, default.units)
@@ -244,8 +244,6 @@ grid.dvi <- function(...) {
     grid.draw(dviGrob(...))
 }
 
-## Very simplistic for now
-## Needs flexibility in terms of LaTeX preable/postamble, TeX engine, ...
 latexGrob <- function(tex,
                       x=0.5, y=0.5,
                       default.units="npc", just="centre",
@@ -254,7 +252,7 @@ latexGrob <- function(tex,
                       name=NULL,
                       preamble=getOption("dvir.preamble"),
                       postamble=getOption("dvir.postamble"),
-                      engine=texEngine,
+                      engine=latexEngine,
                       tinytex=FALSE) {
     haveTinyTeX <- tinytex && requireNamespace("tinytex", quietly=TRUE)
     if (!haveTinyTeX) {

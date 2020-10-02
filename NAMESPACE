@@ -45,7 +45,7 @@ export("readDVI",
        
        "tikzPreamble", "tikzpicturePreamble",
 
-       "engine", "texEngine", "luatexEngine", # "xetexEngine",
+       "TeXengine", "latexEngine", "luatexEngine", # "xetexEngine",
        "noSpecial", "dvirSpecial",
        
        "fontPaths")
