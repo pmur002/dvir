@@ -75,14 +75,22 @@
 % Path usage:
 \newif\ifpgf@sys@dvir@clipnext
 
+\def\pgf@sys@dvir@newpath{%
+  \pgfsysprotocol@bufferedtrue%
+  \pgfsysprotocol@literal{new-path}%
+  \pgf@sys@flushdvirgs%
+  \pgfsys@dvir@newline %
+  \pgfsysprotocol@bufferedfalse%
+  \pgfsysprotocol@literal{}
+}
 \def\pgfsys@stroke{%
   \ifpgf@sys@dvir@clipnext%
-    \pgfsysprotocol@literal{new-path}%
+    \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
     \pgfsysprotocol@literal{stroke-clip}%
     \pgf@sys@dvir@clipnextfalse%
   \else%
-    \pgfsysprotocol@literal{new-path}%
+    \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
     \pgfsysprotocol@literal{stroke}%
   \fi%
@@ -90,12 +98,12 @@
 
 \def\pgfsys@fill{%
   \ifpgf@sys@dvir@clipnext%
-    \pgfsysprotocol@literal{new-path}%
+    \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
     \pgfsysprotocol@literal{fill-clip}
     \pgf@sys@dvir@clipnextfalse%
   \else%
-    \pgfsysprotocol@literal{new-path}%
+    \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
     \pgfsysprotocol@literal{fill}
   \fi%
@@ -103,12 +111,12 @@
 
 \def\pgfsys@fillstroke{%
   \ifpgf@sys@dvir@clipnext%
-    \pgfsysprotocol@literal{new-path}%
+    \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
     \pgfsysprotocol@literal{fill-stroke-clip}
     \pgf@sys@dvir@clipnextfalse%
   \else%
-    \pgfsysprotocol@literal{new-path}%
+    \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
     \pgfsysprotocol@literal{fill-stroke}
   \fi%
@@ -118,7 +126,7 @@
 
 \def\pgfsys@discardpath{%
   \ifpgf@sys@dvir@clipnext%
-    \pgfsysprotocol@literal{new-path}%
+    \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
     \pgfsysprotocol@literal{clip}
     \pgf@sys@dvir@clipnextfalse%

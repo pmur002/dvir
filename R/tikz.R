@@ -237,9 +237,10 @@ drawPathElement <- function(x, i) {
            stop("unsupported path element"))
 }
 
-drawNewPath <- function() {
+drawNewPath <- function(x) {
     set("pathX", NULL)
     set("pathY", NULL)
+    drawViewport(x)
 }
 
 drawStroke <- function() {
@@ -248,7 +249,9 @@ drawStroke <- function() {
     pathX <- get("pathX")
     pathY <- get("pathY")
     grid.polyline(x=unit(left, "native") + unit(unlist(pathX), "pt"),
-                  y=unit(bottom, "native") + unit(unlist(pathY), "pt"))    
+                  y=unit(bottom, "native") + unit(unlist(pathY), "pt"))
+    ## Undo new-path viewport
+    popViewport()
 }
 
 ## Based on
@@ -336,10 +339,27 @@ parseSetting <- function(x) {
            fill=eval(str2lang(value)),
            lwd=96*parseValueWithUnit(value),
            lty=parseLineDash(value),
+           `stroke-opacity`=as.numeric(value),
            stop("unsupported setting"))
 }
 
-drawBeginScope <- function(x) {
+handleOpacity <- function(x) {
+    if ("stroke-opacity" %in% names(x)) {
+        if ("col" %in% names(x)) {
+            x$col <- adjustcolor(x$col, alpha=x$"stroke-opacity")
+        }
+        x$"stroke-opacity" <- NULL
+    }
+    if ("fill-opacity" %in% names(x)) {
+        if ("fill" %in% names(x)) {
+            x$fill <- adjustcolor(x$fill, alpha=x$"fill-opacity")
+        }
+        x$"fill-opacity" <- NULL
+    }
+    x
+}
+
+drawViewport <- function(x) {
     if (length(x) == 0) {
         gp <- gpar()
     } else {
@@ -347,13 +367,17 @@ drawBeginScope <- function(x) {
         names <- sapply(tokens, "[", 1)
         values <- lapply(tokens, parseSetting)
         names(values) <- names
-        gp <- do.call(gpar, values)
+        gp <- do.call(gpar, handleOpacity(values))
     }
     topvp <- get("viewport")
     vp <- viewport(gp=gp,
                    xscale=topvp$xscale, yscale=topvp$yscale,
                    name=vpName())
     pushViewport(vp)
+}
+
+drawBeginScope <- function(x) {
+    drawViewport(x)
 }
 
 drawEndScope <- function() {
@@ -373,7 +397,7 @@ drawSpecial <- function(x) {
         switch(tokens[1],
                `begin-scope`=drawBeginScope(tokens[-1]),
                `end-scope`=drawEndScope(),
-               `new-path`=drawNewPath(),
+               `new-path`=drawNewPath(tokens[-1]),
                `stroke`=drawStroke(),
                `transform`=drawTransform(tokens[-1]),
                stop("Unsupported TikZ special"))
