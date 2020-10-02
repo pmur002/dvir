@@ -395,17 +395,46 @@ gridSpecial <- function(op) {
 dvirSpecial <- specialHandler(init=specialInit,
                               metric=specialMetric,
                               grid=gridSpecial)
-                           
-grid.tikz <- function(...) {
-    grid.latex(...,
-               preamble=getOption("tikz.preamble"),
-               postamble=getOption("dvir.postamble"),
-               engine=engine("latex", special=dvirSpecial))
+
+################################################################################
+## User interface
+
+tikzPreamble <- function(packages=NULL) {
+    if (!is.null(packages)) {
+        usepackages <- paste0("\\usetikzlibrary{", packages, "}",
+                              collapse="\n")
+    } else {
+        usepackages <- NULL
+    }
+    paste("\\documentclass[12pt]{standalone}",
+          paste0("\\def\\pgfsysdriver{",
+                 system.file("tikz", "pgfsys-dvir.def",
+                             package="dvir"),
+                 "}"),
+          "\\usepackage{tikz}",
+          usepackages,
+          "\\begin{document}",
+          sep="\n")
 }
 
-grid.tikzpicture <- function(...) {
-    grid.latex(...,
-               preamble=getOption("tikzpicture.preamble"),
-               postamble=getOption("tikzpicture.postamble"),
-               engine=engine("latex", special=dvirSpecial))
+tikzpicturePreamble <- function(packages=NULL) {
+    paste(tikzPreamble(packages),
+          "\\begin{tikzpicture}",
+          sep="\n")
+}
+
+grid.tikz <- function(tex, ...,
+                      preamble=getOption("tikz.preamble"),
+                      postamble=getOption("dvir.postamble"),
+                      texEngine=engine("latex", special=dvirSpecial)) {
+    grid.latex(tex, ...,
+               preamble=preamble, postamble=postamble, engine=texEngine)
+}
+
+grid.tikzpicture <- function(tex, ...,
+                             preamble=getOption("tikzpicture.preamble"),
+                             postamble=getOption("tikzpicture.postamble"),
+                             texEngine=engine("latex", special=dvirSpecial)) {
+    grid.latex(tex, ...,
+               preamble=preamble, postamble=postamble, engine=texEngine)
 }

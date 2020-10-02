@@ -42,6 +42,8 @@ export("readDVI",
 
        "grid.latex", "latexGrob",
        "grid.tikz", "grid.tikzpicture",
+       
+       "tikzPreamble", "tikzpicturePreamble",
 
        "engine", "texEngine", "luatexEngine", # "xetexEngine",
        "noSpecial", "dvirSpecial",
