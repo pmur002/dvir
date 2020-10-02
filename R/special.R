@@ -116,14 +116,27 @@ metricTransform <- function(x) {
     left <- get("pictureLeft")
     bottom <- get("pictureBottom")
     ## Move to location of text
-    set("pictureX", xtoTeX(unit(left, "mm") + unit(trans$tr[1], "pt")))
-    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(trans$tr[2], "pt")))
-    ## Update bbox for location of text
-    updateHoriz(get("pictureX"))
-    updateVert(get("pictureY"))
+    textX <- xtoTeX(unit(left, "mm") + unit(trans$tr[1], "pt"))
+    textY <- ytoTeX(unit(bottom, "mm") - unit(trans$tr[2], "pt"))
+    ## TEMPORARILY set h/v even though we are not drawing so that
+    ## metric_set_char updates bbox correctly
+    ## NOTE that this will NOT take into account rotation of text
+    set("h", textX)
+    set("v", textY)
+    set("textDepth", get("textDepth") + 1)
 }
 
-metricSpecial <- function(x) {
+## Have to undo any TEMPORARY h/v offsets
+metricEndScope <- function() {
+    td <- get("textDepth")
+    if (td > 0) {
+        set("h", get("savedH"))
+        set("v", get("savedV"))
+        set("textDepth", 0)
+    }
+}
+
+measureSpecial <- function(x) {
     ## Split by ": " (for paths)
     tokens <- strsplit(gsub(" *$", "", x), ":")[[1]]
     if (length(tokens) == 1) {
@@ -132,8 +145,8 @@ metricSpecial <- function(x) {
         tokens <- strsplit(gsub(" *$", "", tokens), " ")[[1]]
         switch(tokens[1],
                `transform`=metricTransform(tokens[-1]),
+               `end-scope`=metricEndScope(),
                `begin-scope`=,
-               `end-scope`=,
                `new-path`=,
                `stroke`={},
                stop("Unsupported TikZ special"))
@@ -157,12 +170,15 @@ specialMetric <- function(op) {
         set("pictureBottom", y)
         set("pictureX", h)
         set("pictureY", v)
+        set("savedH", h)
+        set("savedV", v)
+        set("textDepth", 0)
         set("inPicture", TRUE)
     } else if (grepl("^end-picture", specialString)) {
         set("inPicture", FALSE)
     } else {
         if (get("inPicture")) {
-            metricSpecial(specialString)
+            measureSpecial(specialString)
         }
     }
 }
