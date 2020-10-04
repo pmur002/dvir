@@ -182,10 +182,10 @@ metric_info_241 <- op_ignore
 metric_info_242 <- op_ignore
 
 ## font_def<i>
-metric_info_243 <- op_font_def
+metric_info_243 <- op_ignore
 
 ## pre
-metric_info_247 <- op_pre
+metric_info_247 <- op_ignore
 
 ## post
 metric_info_248 <- op_ignore
