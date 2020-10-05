@@ -12,6 +12,13 @@
   }
 }
 
+\section{Changes in version 0.2-2}{
+  \itemize{
+    \item Speed up by removing redundant font_def handling in "metric"
+    and "grid" sweeps of DVI file (just reuse font info from "font" sweep).
+  }
+}
+
 \section{Changes in version 0.2-0}{
   \itemize{
     \item Added support for LuaTeX engine.
