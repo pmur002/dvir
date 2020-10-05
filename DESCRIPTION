@@ -1,11 +1,7 @@
 Package: dvir
 Type: Package
 Title: Render DVI Files
-<<<<<<< HEAD
 Version: 0.2-2
-=======
-Version: 0.2-1
->>>>>>> upstream/master
 Author: Paul Murrell
 Maintainer: Paul Murrell <paul@stat.auckland.ac.nz>
 Description: Functions to read DVI files, as produced from TeX documents,
