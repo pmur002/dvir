@@ -2,6 +2,13 @@
 \title{NEWS file for the dvir package}
 \encoding{UTF-8}
 
+\section{Changes in version 0.2-2}{
+  \itemize{
+    \item Speed up by removing redundant font_def handling in "metric"
+    and "grid" sweeps of DVI file (just reuse font info from "font" sweep).
+  }
+}
+
 \section{Changes in version 0.2-1}{
   \itemize{
     \item Add FontConfig files into more than one directory to be
@@ -9,13 +16,6 @@
 
     \item Add support for reading (and printing) TeX specials within DVI
     files. 
-  }
-}
-
-\section{Changes in version 0.2-2}{
-  \itemize{
-    \item Speed up by removing redundant font_def handling in "metric"
-    and "grid" sweeps of DVI file (just reuse font info from "font" sweep).
   }
 }
 
