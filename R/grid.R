@@ -60,8 +60,8 @@ gridRule <- function(op) {
 }
 
 grid_op_132 <- function(op) {
-    gridRule(op)
     op_set_rule(op)
+    gridRule(op)
 }
 
 ## put_rule

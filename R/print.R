@@ -237,10 +237,20 @@ for (i in 171:234) {
 }
 
 ## xxx<i> (specials)
-print_op_239 <- op_ignore
-print_op_240 <- op_ignore
-print_op_241 <- op_ignore
-print_op_242 <- op_ignore
+print_xxx <- function(op) {
+    str <- paste0("xxx",
+                  blockValue(op$blocks$op.opcode) - 238,
+                  "         ",
+                  "k=", blockValue(op$blocks$op.opparams.length), "\n",
+                  "             ",
+                  "x=",
+                  paste(blockValue(op$blocks$op.opparams.string), collapse=""),
+                  "\n")
+    cat(str)
+}
+for (i in 239:242) {
+    assign(paste0("print_op_", i), print_xxx)
+}
 
 ## font_def<i>
 print_op_243 <- function(op) {

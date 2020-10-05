@@ -71,10 +71,6 @@ initFontConfig <- function() {
     tmpdir <- file.path(tempdir(), "dvir")
     dir.create(tmpdir)
     configFile <- file.path(tmpdir, "10-dvir-fonts.conf")
-    ## Ensure that ~/.fonts.conf.d/ exists
-    if (!dir.exists("~/.fonts.conf.d/")) {
-        dir.create("~/.fonts.conf.d/")
-    }
     config <- xml_new_root(xml_dtd("fontconfig", system_id="fonts.dtd"))
     xml_add_child(config, "fontconfig")
     xml_add_child(config, xml_comment("include TeX fonts"))
@@ -124,10 +120,10 @@ addFontConfig <- function(family, psname, dir=NULL) {
             dir.create("~/.fonts.conf.d")
         }
         file.copy(configFile, "~/.fonts.conf.d", overwrite=TRUE)
-        if (!dir.exists("~/fontconfig/conf.d")) {
-            dir.create("~/fontconfig/conf.d", recursive=TRUE)
+        if (!dir.exists("~/.config/fontconfig/conf.d")) {
+            dir.create("~/.config/fontconfig/conf.d", recursive=TRUE)
         }
-        file.copy(configFile, "~/fontconfig/conf.d", overwrite=TRUE)
+        file.copy(configFile, "~/.config/fontconfig/conf.d", overwrite=TRUE)
         ## Force reload of FontConfig configuration file
         reset_font_cache()
     }

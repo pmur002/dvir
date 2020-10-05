@@ -11,6 +11,9 @@ int2 <- atomicBlock("int", size=2, endian="big")
 int3 <- integer3(endian="big")
 int4 <- atomicBlock("int", size=4, endian="big")
 
+uint1 <- atomicBlock("int", size=1, signed=FALSE)
+uint2 <- atomicBlock("int", size=2, endian="big", signed=FALSE)
+
 ################################################################################
 ## operation parameters
 
@@ -101,8 +104,8 @@ for (i in 171:234) {
 }
 
 ## xxx<i> (specials)
-op239 <- lengthBlock(int1, ASCIIchar, blockLabel="string")
-op240 <- lengthBlock(int2, ASCIIchar, blockLabel="string")
+op239 <- lengthBlock(uint1, ASCIIchar, blockLabel="string")
+op240 <- lengthBlock(uint2, ASCIIchar, blockLabel="string")
 op241 <- lengthBlock(int3, ASCIIchar, blockLabel="string")
 op242 <- lengthBlock(int4, ASCIIchar, blockLabel="string")
 
