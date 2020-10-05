@@ -133,10 +133,10 @@ grid_op_241 <- op_ignore
 grid_op_242 <- op_ignore
 
 ## font_def<i>
-grid_op_243 <- op_font_def
+grid_op_243 <- op_ignore
 
 ## pre
-grid_op_247 <- op_pre
+grid_op_247 <- op_ignore
 
 ## post
 grid_op_248 <- op_ignore
