@@ -16,6 +16,8 @@ importFrom("grDevices",
            "Type1Font")
 importFrom("utils",
            "compareVersion")
+importFrom("devoid",
+           "void_dev")
 importFrom("xml2",
            "read_xml",
            "write_xml",

@@ -171,8 +171,8 @@ dvigrid <- function(x, device, engine, vp, scale=1) {
     set("scale", scale)
     ## Save current device
     set("currentDevice", dev.cur())
-    ## Create off-screen device
-    pdf(NULL)
+    ## Create off-screen device (just to capture grid display list)
+    void_dev()
     set("dvirDevice", dev.cur())
     ## Set up main viewport
     pushViewport(vp)
