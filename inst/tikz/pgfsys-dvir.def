@@ -59,15 +59,26 @@
   \pgf@sys@addtodvirpath{,}\pgf@sys@dvirnum{#6}
   \pgf@sys@addtodvirpath{:}%
 }
+% Convert rect to move-line-close so ALL paths start with move
 \def\pgfsys@rect#1#2#3#4{%
-  \pgf@sys@addtodvirpath{rect }\pgf@sys@dvirnum{#1}%
+  \pgf@sys@addtodvirpath{moveto }\pgf@sys@dvirnum{#1}%
   \pgf@sys@addtodvirpath{,}\pgf@sys@dvirnum{#2}%
-  \pgf@sys@addtodvirpath{,}\pgf@sys@dvirnum{#3}%
+  \pgf@sys@addtodvirpath{:}%
+  \pgf@sys@addtodvirpath{lineto }\pgf@sys@dvirnum{#1}%
   \pgf@sys@addtodvirpath{,}\pgf@sys@dvirnum{#4}%
+  \pgf@sys@addtodvirpath{:}%
+  \pgf@sys@addtodvirpath{lineto }\pgf@sys@dvirnum{#3}%
+  \pgf@sys@addtodvirpath{,}\pgf@sys@dvirnum{#4}%
+  \pgf@sys@addtodvirpath{:}%
+  \pgf@sys@addtodvirpath{lineto }\pgf@sys@dvirnum{#3}%
+  \pgf@sys@addtodvirpath{,}\pgf@sys@dvirnum{#2}%
+  \pgf@sys@addtodvirpath{:}%
+  \pgf@sys@addtodvirpath{close}%
   \pgf@sys@addtodvirpath{:}%
 }
 \def\pgfsys@closepath{%
   \pgf@sys@addtodvirpath{close}%
+  \pgf@sys@addtodvirpath{:}%
   \pgfsys@dvir@newline %
 }
 

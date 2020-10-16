@@ -92,6 +92,7 @@ metricPathElement <- function(x) {
            moveto=metricMoveTo(tokens[-1]),
            lineto=metricLineTo(tokens[-1]),
            curveto=metricCurveTo(tokens[-1]),
+           close={},
            stop("unsupported path element"))
 }
 
@@ -195,45 +196,71 @@ vpName <- vpNameGen()
 
 parseMoveTo <- function(x, i) {
     xy <- strsplit(x, ",")[[1]]
+    sub <- get("subPath") + 1
     pathX <- get("pathX")
     pathY <- get("pathY")
-    pathX[[i]] <- as.numeric(xy[1])
-    pathY[[i]] <- as.numeric(xy[2])
+    pathX[[sub]][[i]] <- as.numeric(xy[1])
+    pathY[[sub]][[i]] <- as.numeric(xy[2])
     set("pathX", pathX)
     set("pathY", pathY)
+    set("subPath", sub)
 }
 parseLineTo <- function(x, i) {
     xy <- strsplit(x, ",")[[1]]
+    sub <- get("subPath")
     pathX <- get("pathX")
     pathY <- get("pathY")
-    pathX[[i]] <- as.numeric(xy[1])
-    pathY[[i]] <- as.numeric(xy[2])
+    pathX[[sub]][[i]] <- as.numeric(xy[1])
+    pathY[[sub]][[i]] <- as.numeric(xy[2])
     set("pathX", pathX)
     set("pathY", pathY)
 }
 
 parseCurveTo <- function(x, i) {
     xy <- strsplit(x, ",")[[1]]
+    sub <- get("subPath")
     pathX <- get("pathX")
-    startX <- pathX[[i - 1]][length(pathX[[i - 1]])]
+    startX <- pathX[[sub]][[i - 1]][length(pathX[[sub]][[i - 1]])]
     pathY <- get("pathY")
-    startY <- pathY[[i - 1]][length(pathY[[i - 1]])]    
+    startY <- pathY[[sub]][[i - 1]][length(pathY[[sub]][[i - 1]])]    
     ## Convert Bezier to polyline
     bg <- gridBezier::BezierGrob(x=unit(c(startX, xy[c(1, 3, 5)]), units="pt"),
                                  y=unit(c(startY, xy[c(2, 4, 6)]), units="pt"))
     pts <- gridBezier::BezierPoints(bg)
-    pathX[[i]] <- convertX(unit(pts$x[-1], "in"), "pt", valueOnly=TRUE)
-    pathY[[i]] <- convertY(unit(pts$y[-1], "in"), "pt", valueOnly=TRUE)
+    pathX[[sub]][[i]] <- convertX(unit(pts$x[-1], "in"), "pt", valueOnly=TRUE)
+    pathY[[sub]][[i]] <- convertY(unit(pts$y[-1], "in"), "pt", valueOnly=TRUE)
     set("pathX", pathX)
     set("pathY", pathY)
 }
 
+parseClose <- function(i) {
+    ## Start new subPath
+    sub <- get("subPath") + 1
+    ## Mark old subPath as closed
+    closed <- get("pathClosed")
+    closed[sub - 1] <- TRUE
+    set("pathClosed", closed)
+    ## New path begins at start point of previous subPath
+    ## (this may immediately get superceded by moveto, BUT OTOH it may NOT)
+    pathX <- get("pathX")
+    pathY <- get("pathY")
+    pathX[[sub]][[i]] <- pathX[[sub - 1]][[1]]
+    pathY[[sub]][[i]] <- pathY[[sub - 1]][[1]]
+    set("pathX", pathX)
+    set("pathY", pathY)
+    set("subPath", sub)
+}
+
 drawPathElement <- function(x, i) {
     tokens <- strsplit(x, " ")[[1]]
+    if (i == 1 && tokens[1] != "moveto") {
+        stop("Invalid path (must begin with moveto)")
+    }
     switch(tokens[1],
            moveto=parseMoveTo(tokens[-1], i),
            lineto=parseLineTo(tokens[-1], i),
            curveto=parseCurveTo(tokens[-1], i),
+           close=parseClose(i),
            stop("unsupported path element"))
 }
 
@@ -248,8 +275,41 @@ drawStroke <- function() {
     bottom <- get("pictureBottom")
     pathX <- get("pathX")
     pathY <- get("pathY")
-    grid.polyline(x=unit(left, "native") + unit(unlist(pathX), "pt"),
-                  y=unit(bottom, "native") + unit(unlist(pathY), "pt"))
+    closed <- get("pathClosed")
+    mapply(function(px, py, cl) {
+               if (length(unlist(px)) > 1) {
+                   if (cl) {
+                       grid.path(x=unit(left, "native") +
+                                     unit(unlist(px), "pt"),
+                                 y=unit(bottom, "native") +
+                                     unit(unlist(py), "pt"),
+                                 gp=gpar(fill=NA))
+                   } else {
+                       grid.polyline(x=unit(left, "native") +
+                                         unit(unlist(px), "pt"),
+                                     y=unit(bottom, "native") +
+                                         unit(unlist(py), "pt"))
+                   }
+               }
+           },
+           pathX, pathY, closed)
+    ## Undo new-path viewport
+    popViewport()
+}
+
+drawFill <- function() {
+    left <- get("pictureLeft")
+    bottom <- get("pictureBottom")
+    pathX <- get("pathX")
+    pathY <- get("pathY")
+    mapply(function(px, py) {
+               if (length(unlist(px)) > 1) {
+                   grid.path(x=unit(left, "native") + unit(unlist(px), "pt"),
+                             y=unit(bottom, "native") + unit(unlist(py), "pt"),
+                             gp=gpar(col=NA))
+               }
+           },
+           pathX, pathY, closed)
     ## Undo new-path viewport
     popViewport()
 }
@@ -399,13 +459,21 @@ drawSpecial <- function(x) {
                `end-scope`=drawEndScope(),
                `new-path`=drawNewPath(tokens[-1]),
                `stroke`=drawStroke(),
+               `fill`=drawFill(),
                `transform`=drawTransform(tokens[-1]),
                stop("Unsupported TikZ special"))
     } else {
         ## Path
         n <- length(tokens)
-        set("pathX", list(n))
-        set("pathY", list(n))
+        ## Count number of moveto's and close's
+        nsub <- length(grep("moveto|close", tokens))
+        ## Create subpath for each moveto and close
+        set("subPath", 0)
+        ## (record path element i in component i of relevant subpath)
+        set("pathX", lapply(1:nsub, function(i) vector("list", n)))
+        set("pathY", lapply(1:nsub, function(i) vector("list", n)))
+        ## Is each subpath closed ? (FALSE by default)
+        set("pathClosed", logical(nsub))
         mapply(drawPathElement, tokens, 1:n)
         invisible()
     }
