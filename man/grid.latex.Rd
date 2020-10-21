@@ -58,6 +58,9 @@ grid.latex(...)
   \code{\link{readDVI}}, \code{\link{grid.dvi}}
 }
 \examples{
+\dontrun{
+% Requires TeX installation
 grid.latex("$x - \\\\mu$")
+}
 }
 \keyword{ dplot }

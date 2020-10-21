@@ -53,6 +53,10 @@ grid.dvi(\dots)
 }
 \examples{
 dvi <- readDVI(system.file("dvi", "test.dvi", package="dvir"))
+\dontrun{
+% Requires TeX installation
 grid.dvi(dvi)
 }
+}
 \keyword{ dplot }
+

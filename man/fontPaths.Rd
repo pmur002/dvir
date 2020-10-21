@@ -26,7 +26,10 @@ fontPaths(x)
 }
 \examples{
 dvi <- readDVI(system.file("dvi", "test.dvi", package="dvir"))
+\dontrun{
+% Requires TeX installation
 dg <- dviGrob(dvi)
 fontPaths(dg)
+}
 }
 \keyword{ dplot }
