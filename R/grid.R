@@ -5,14 +5,24 @@ library(grid)
 ## Traverse DVI information in memory and draw 'grid' representation
 
 ## set_char_<i>
-for (i in 0:127) {
-    assign(paste0("grid_op_", i), op_set_char)
+gridSetChar <- function(op) {
+    char <- op_set_char(op)
+    grid.draw(char)
 }
 
-grid_op_128 <- op_set
-grid_op_129 <- op_set
-grid_op_130 <- op_set
-grid_op_131 <- op_set
+for (i in 0:127) {
+    assign(paste0("grid_op_", i), gridSetChar)
+}
+
+gridSet <- function(op) {
+    char <- op_set(op)
+    grid.draw(char)
+}
+
+grid_op_128 <- gridSet
+grid_op_129 <- gridSet
+grid_op_130 <- gridSet
+grid_op_131 <- gridSet
 
 ## set_rule
 ## NOTE that we need to do a "rule_pixels" calculation here
@@ -34,25 +44,25 @@ gridRule <- function(op) {
         height <- fromTeX(a)
         ## Below lwd=1, draw a line
         if (width < 25.4/72) {
-            segmentsGrob(x + width/2,
-                         y,
-                         x + width/2,
-                         y + height,
-                         default.units="native",
-                         gp=gpar(lwd=72*width/25.4,
-                                 lineend="butt"))
+            grid.segments(x + width/2,
+                          y,
+                          x + width/2,
+                          y - height,
+                          default.units="native",
+                          gp=gpar(lwd=72*width/25.4,
+                                  lineend="butt"))
         } else if (height < 25.4/72) {
-            segmentsGrob(x,
-                         y + height/2,
-                         x + width,
-                         y + height/2,
-                         default.units="native",
-                         gp=gpar(lwd=72*height/25.4,
-                                 lineend="butt"))
+            grid.segments(x,
+                          y + height/2,
+                          x + width,
+                          y - height/2,
+                          default.units="native",
+                          gp=gpar(lwd=72*height/25.4,
+                                  lineend="butt"))
         } else {
-            rectGrob(x, y, width, height, default.units="native",
-                     just=c("left", "bottom"),
-                     gp=gpar(col=NA, fill="black"))
+            grid.rect(x, y, width, -height, default.units="native",
+                      just=c("left", "bottom"),
+                      gp=gpar(col=NA, fill="black"))
         }
     } else {
         NULL
@@ -60,8 +70,9 @@ gridRule <- function(op) {
 }
 
 grid_op_132 <- function(op) {
-    op_set_rule(op)
+    ## Draw first because op_set_rule modifies h
     gridRule(op)
+    op_set_rule(op)
 }
 
 ## put_rule
@@ -127,10 +138,15 @@ for (i in 171:234) {
 }
 
 ## xxx<i> (specials)
-grid_op_239 <- op_ignore
-grid_op_240 <- op_ignore
-grid_op_241 <- op_ignore
-grid_op_242 <- op_ignore
+gridSpecial <- function(op) {
+    engine <- get("engine")
+    engine$special$grid(op)
+}
+
+grid_op_239 <- gridSpecial
+grid_op_240 <- gridSpecial
+grid_op_241 <- gridSpecial
+grid_op_242 <- gridSpecial
 
 ## font_def<i>
 grid_op_243 <- op_ignore
@@ -149,11 +165,30 @@ op2grid <- function(op) {
     base::get(paste0("grid_op_", opcode))(op)
 }
 
-dvigrid <- function(x, device, engine, scale=1) {
+dvigrid <- function(x, device, engine, vp, scale=1) {
     set("device", device)
     set("engine", engine)
     set("scale", scale)
+    ## Save current device
+    set("currentDevice", dev.cur())
+    ## Create off-screen device (just to capture grid display list)
+    void_dev()
+    set("dvirDevice", dev.cur())
+    ## Set up main viewport
+    pushViewport(vp)
+    ## "draw" dvi output off screen
     invisible(lapply(x, op2grid))
+    popViewport()
+    ## Capture the resulting gTree
+    gTree <- grid.grab()
+    ## Close the off-screen device
+    dev.off()
+    ## Restore current device
+    cd <- get("currentDevice")
+    if (cd != 1)
+        dev.set(cd)
+    ## Return gTree
+    gTree
 }
 
 ################################################################################
@@ -169,7 +204,7 @@ dviGrob.character <- function(dvi,
                               rot=0,
                               device=names(dev.cur()),
                               name=NULL,
-                              engine=texEngine,
+                              engine=latexEngine,
                               ...) {
     dviGrob(readDVI(dvi), x, y, default.units, just, rot, device, name, engine)
 }
@@ -180,7 +215,7 @@ dviGrob.DVI <- function(dvi,
                         rot=0,
                         device=names(dev.cur()),
                         name=NULL,
-                        engine=texEngine,
+                        engine=latexEngine,
                         ...) {
     if (!is.unit(x))
         x <- unit(x, default.units)
@@ -200,17 +235,15 @@ dviGrob.DVI <- function(dvi,
                    xscale=c(metrics$left, metrics$right),
                    yscale=c(metrics$bottom, metrics$top),
                    name="dvi.vp")
-    grobs <- dvigrid(dvi, device, engine)
-    children <- do.call(gList, grobs[sapply(grobs, is.grob)])
-    gTree(children=children, fonts=fonts, vp=vp, name=name, cl="DVIgrob")
+    set("viewport", vp)
+    grobs <- dvigrid(dvi, device, engine, vp)
+    gTree(children=gList(grobs), fonts=fonts, name=name, cl="DVIgrob")
 }
 
 grid.dvi <- function(...) {
     grid.draw(dviGrob(...))
 }
 
-## Very simplistic for now
-## Needs flexibility in terms of LaTeX preable/postamble, TeX engine, ...
 latexGrob <- function(tex,
                       x=0.5, y=0.5,
                       default.units="npc", just="centre",
@@ -219,7 +252,7 @@ latexGrob <- function(tex,
                       name=NULL,
                       preamble=getOption("dvir.preamble"),
                       postamble=getOption("dvir.postamble"),
-                      engine=texEngine,
+                      engine=latexEngine,
                       tinytex=FALSE) {
     haveTinyTeX <- tinytex && requireNamespace("tinytex", quietly=TRUE)
     if (!haveTinyTeX) {

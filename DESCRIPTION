@@ -1,7 +1,7 @@
 Package: dvir
 Type: Package
 Title: Render DVI Files
-Version: 0.2-2
+Version: 0.3-0
 Authors@R: c(person("Paul", "Murrell", email = "paul@stat.auckland.ac.nz",
                     role = c("aut", "cre")),
              person("Alexander", "van der Voorn", role = "ctb"))
@@ -9,8 +9,9 @@ Maintainer: Paul Murrell <paul@stat.auckland.ac.nz>
 Description: Functions to read DVI files, as produced from TeX documents,
              and render them within R.
 Depends: grid
-Suggests: tinytex
+Imports: devoid
+Suggests: tinytex, gridBezier
 SystemRequirements: A TeX distribution such as TeX Live, fonttools, fontconfig
 Imports: extrafont, grDevices, hexView (>= 0.3-4), xml2, systemfonts (> 0.1.1)
-Collate: globals.R convert.R device.R ops.R fonts.R enc.R metric.R luatex.R engine.R read.R print.R grid.R zzz.R
+Collate: globals.R convert.R device.R ops.R fonts.R enc.R metric.R luatex.R tikz.R engine.R read.R print.R grid.R zzz.R
 License: GPL-3

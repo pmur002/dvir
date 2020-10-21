@@ -16,17 +16,21 @@ importFrom("grDevices",
            "Type1Font")
 importFrom("utils",
            "compareVersion")
+importFrom("devoid",
+           "void_dev")
 importFrom("xml2",
            "read_xml",
            "write_xml",
            "xml_add_child",
            "xml_add_sibling",
            "xml_attr",
+           "xml_attrs",
            "xml_children",
            "xml_comment",
            "xml_dtd",
            "xml_find_all",
            "xml_find_first",
+           "xml_name",
            "xml_new_root",
            "xml_replace",
            "xml_root",
@@ -39,8 +43,12 @@ export("readDVI",
        "grid.dvi", "dviGrob",
 
        "grid.latex", "latexGrob",
+       "grid.tikz", "grid.tikzpicture",
+       
+       "tikzPreamble", "tikzpicturePreamble",
 
-       "texEngine", "luatexEngine", # "xetexEngine",
+       "TeXengine", "latexEngine", "luatexEngine", # "xetexEngine",
+       "noSpecial", "dvirSpecial",
        
        "fontPaths")
 
