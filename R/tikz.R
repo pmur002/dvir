@@ -149,7 +149,9 @@ measureSpecial <- function(x) {
                `end-scope`=metricEndScope(),
                `begin-scope`=,
                `new-path`=,
-               `stroke`={},
+               `stroke`=,
+               `fill`=,
+               `fill-stroke`={},
                stop("Unsupported TikZ special"))
     } else {
         ## Path
@@ -309,6 +311,41 @@ drawFill <- function() {
                              gp=gpar(col=NA))
                }
            },
+           pathX, pathY)
+    ## Undo new-path viewport
+    popViewport()
+}
+
+drawFillStroke <- function() {
+    left <- get("pictureLeft")
+    bottom <- get("pictureBottom")
+    pathX <- get("pathX")
+    pathY <- get("pathY")
+    closed <- get("pathClosed")
+    mapply(function(px, py) {
+               if (length(unlist(px)) > 1) {
+                   grid.path(x=unit(left, "native") + unit(unlist(px), "pt"),
+                             y=unit(bottom, "native") + unit(unlist(py), "pt"),
+                             gp=gpar(col=NA))
+               }
+           },
+           pathX, pathY)
+    mapply(function(px, py, cl) {
+               if (length(unlist(px)) > 1) {
+                   if (cl) {
+                       grid.path(x=unit(left, "native") +
+                                     unit(unlist(px), "pt"),
+                                 y=unit(bottom, "native") +
+                                     unit(unlist(py), "pt"),
+                                 gp=gpar(fill=NA))
+                   } else {
+                       grid.polyline(x=unit(left, "native") +
+                                         unit(unlist(px), "pt"),
+                                     y=unit(bottom, "native") +
+                                         unit(unlist(py), "pt"))
+                   }
+               }
+           },
            pathX, pathY, closed)
     ## Undo new-path viewport
     popViewport()
@@ -399,6 +436,8 @@ parseSetting <- function(x) {
            fill=eval(str2lang(value)),
            lwd=96*parseValueWithUnit(value),
            lty=parseLineDash(value),
+           lineend=value,
+           linejoin=value,
            `stroke-opacity`=as.numeric(value),
            stop("unsupported setting"))
 }
@@ -452,7 +491,9 @@ drawEndScope <- function() {
 drawSpecial <- function(x) {
     ## Split by ": " (for paths)
     tokens <- strsplit(gsub(" *$", "", x), ":")[[1]]
-    if (length(tokens) == 1) {
+    if (length(tokens) == 0) {
+        warning("Empty special")
+    } else if (length(tokens) == 1) {
         tokens <- strsplit(gsub(" *$", "", tokens), " ")[[1]]
         switch(tokens[1],
                `begin-scope`=drawBeginScope(tokens[-1]),
@@ -460,6 +501,7 @@ drawSpecial <- function(x) {
                `new-path`=drawNewPath(tokens[-1]),
                `stroke`=drawStroke(),
                `fill`=drawFill(),
+               `fill-stroke`=drawFillStroke(), 
                `transform`=drawTransform(tokens[-1]),
                stop("Unsupported TikZ special"))
     } else {
