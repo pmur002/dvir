@@ -702,10 +702,14 @@ luaPreamble <- function(font="Times") {
       "\\selectfont")
 }
 
-grid.lualatex <- function(tex, ...,
-                          preamble=luaPreamble(),
-                          postamble=getOption("dvir.postamble"),
-                          engine=lualatexEngine()) {
-    grid.latex(tex, ..., 
-               preamble=preamble, postamble=postamble, engine=engine)
+lualatexGrob <- function(tex, ...,
+                         preamble=luaPreamble(),
+                         postamble=getOption("dvir.postamble"),
+                         engine=lualatexEngine()) {
+    latexGrob(tex, ..., 
+              preamble=preamble, postamble=postamble, engine=engine)
+}
+
+grid.lualatex <- function(...) {
+    grid.draw(lualatexGrob(...))
 }

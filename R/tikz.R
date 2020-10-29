@@ -589,18 +589,26 @@ tikzpicturePreamble <- function(packages=NULL) {
           sep="\n")
 }
 
-grid.tikz <- function(tex, ...,
-                      preamble=getOption("tikz.preamble"),
-                      postamble=getOption("dvir.postamble"),
-                      engine=TeXengine("latex", special=tikzSpecial)) {
-    grid.latex(tex, ...,
-               preamble=preamble, postamble=postamble, engine=engine)
+tikzGrob <- function(tex, ...,
+                     preamble=getOption("tikz.preamble"),
+                     postamble=getOption("dvir.postamble"),
+                     engine=TeXengine("latex", special=tikzSpecial)) {
+    latexGrob(tex, ...,
+              preamble=preamble, postamble=postamble, engine=engine)
 }
 
-grid.tikzpicture <- function(tex, ...,
-                             preamble=getOption("tikzpicture.preamble"),
-                             postamble=getOption("tikzpicture.postamble"),
-                             engine=TeXengine("latex", special=tikzSpecial)) {
-    grid.latex(tex, ...,
-               preamble=preamble, postamble=postamble, engine=engine)
+grid.tikz <- function(...) {
+    grid.draw(tikzGrob(...))
+}
+
+tikzpictureGrob <- function(tex, ...,
+                            preamble=getOption("tikzpicture.preamble"),
+                            postamble=getOption("tikzpicture.postamble"),
+                            engine=TeXengine("latex", special=tikzSpecial)) {
+    latexGrob(tex, ...,
+              preamble=preamble, postamble=postamble, engine=engine)
+}
+
+grid.tikzpicture <- function(...) {
+    grid.draw(tikzpictureGrob(...))
 }
