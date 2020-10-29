@@ -252,13 +252,19 @@ latexGrob <- function(tex,
                       preamble=getOption("dvir.preamble"),
                       postamble=getOption("dvir.postamble"),
                       engine=latexEngine,
-                      tinytex=FALSE) {
+                      tinytex=FALSE,
+                      file=NULL) {
     haveTinyTeX <- tinytex && requireNamespace("tinytex", quietly=TRUE)
     if (!haveTinyTeX) {
         haveLaTeX <- nchar(Sys.which("latex"))
         if (!haveLaTeX) {
             stop("LaTeX not found")
         }
+    }
+    if (missing(tex)) {
+        if (is.null(file))
+            stop("Must specify one of 'tex' or 'file'")
+        tex <- readLines(file)
     }
     texFile <- tempfile(fileext=".tex")
     dviFile <- gsub("[.]tex", ".dvi", texFile)
