@@ -235,7 +235,6 @@ dviGrob.DVI <- function(dvi,
                    xscale=c(metrics$left, metrics$right),
                    yscale=c(metrics$bottom, metrics$top),
                    name="dvi.vp")
-    set("viewport", vp)
     grobs <- dvigrid(dvi, device, engine, vp)
     gTree(children=gList(grobs), fonts=fonts, name=name, cl="DVIgrob")
 }

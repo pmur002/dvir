@@ -33,31 +33,40 @@ specialInit <- function() {
 ## NOTE also that the TikZ locations are in "pt"s
 
 metricMoveTo <- function(x) {
-    xy <- strsplit(x, ",")[[1]]
+    xy <- as.numeric(strsplit(x, ",")[[1]])
+    ## Apply current transform
+    mt <- get("metricTransform")[[1]]
+    xy <- mt %*% c(xy, 1)
     ## Move
     left <- get("pictureLeft")
     bottom <- get("pictureBottom")
-    set("pictureX", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[1]), "pt")))
-    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[2]), "pt")))
+    set("pictureX", xtoTeX(unit(left, "mm") + unit(xy[1], "pt")))
+    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(xy[2], "pt")))
 }
 
 metricLineTo <- function(x) {
-    xy <- strsplit(x, ",")[[1]]
+    xy <- as.numeric(strsplit(x, ",")[[1]])
+    ## Apply current transform
+    mt <- get("metricTransform")[[1]]
+    xy <- mt %*% c(xy, 1)
     ## Update bbox for start point
     updateHoriz(get("pictureX"))
     updateVert(get("pictureY"))
     ## Move to end point
     left <- get("pictureLeft")
     bottom <- get("pictureBottom")
-    set("pictureX", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[1]), "pt")))
-    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[2]), "pt")))
+    set("pictureX", xtoTeX(unit(left, "mm") + unit(xy[1], "pt")))
+    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(xy[2], "pt")))
     ## Update bbox for end point
     updateHoriz(get("pictureX"))
     updateVert(get("pictureY"))
 }
 
 metricCurveTo <- function(x) {
-    xy <- strsplit(x, ",")[[1]]
+    xy <- as.numeric(strsplit(x, ",")[[1]])
+    ## Apply current transform
+    mt <- get("metricTransform")[[1]]
+    xy <- (mt %*% rbind(matrix(xy, nrow=2), 1))[-3,]
     ## Update bbox for start point
     updateHoriz(get("pictureX"))
     updateVert(get("pictureY"))
@@ -96,12 +105,42 @@ metricPathElement <- function(x) {
            stop("unsupported path element"))
 }
 
-## Like the drawing, this transform handling is VERY limited at present
-## Based on assumption that canvas transforms are only being used
-## to locate (and possibly rotate) text (nodes) AND that there will only
-## be one such transform in effect at once.
-## Furthermore, figuring out the impact of the (possibly rotated) text label
-## on the bounding box is too hard (at least at present) so just add
+## Based on
+## https://math.stackexchange.com/questions/13150/extracting-rotation-scale-values-from-2d-transformation-matrix/13165#13165
+decompose <- function(m) {
+    a <- m[1]
+    b <- m[2]
+    c <- m[3]
+    d <- m[4]
+    e <- m[5]
+    f <- m[6]
+    
+    delta <- a*d - b*c
+
+    translation <- c(e, f)
+    ## Apply the QR-like decomposition.
+    if (a != 0 || b != 0) {
+        r <- sqrt(a*a + b*b)
+        rotation <- if (b > 0) acos(a/r) else -acos(a/r)
+        scale <- c(r, delta/r)
+        skew <- c(atan2((a*c + b*d), (r*r)), 0)
+    } else if (c != 0 || d != 0) {
+        s <- sqrt(c*c + d*d)
+        rotation <- pi/2 - if (d > 0) acos(-c/s) else -acos(c/s)
+        scale <- c(delta/s, s)
+        skew <- c(0, atan2((a*c + b*d), (s*s)))
+    } else {
+        ## a <- b <- c <- d <- 0
+        stop("Invalid transformation matrix")
+    }
+    list(tr=translation, rot=rotation, sc=scale, sk=skew)
+}
+
+## This transform handling is limited
+## It only handles translation and rotation
+## It cannot handle a transform that scales or skews 
+## Furthermore, figuring out the impact of (possibly rotated) text 
+## on the bounding box is too hard (at least at present) so we just add
 ## the transform (label) origin to the bounding box
 ## (interesting to note that it does not appear that labels are included
 ##  in the bounding box for TikZ postscript output either !?)
@@ -109,6 +148,13 @@ metricTransform <- function(x) {
     tokens <- as.numeric(strsplit(x, ",")[[1]])
     m <- rbind(c(tokens[1], tokens[3], tokens[5]),
                c(tokens[2], tokens[4], tokens[6]))
+    ## Update current transform (for picture x/y)
+    mt <- get("metricTransform")
+    mt[[1]] <- rbind(m, c(0, 0, 1)) %*% mt[[1]]
+    set("metricTransform", mt)
+    ## TEMPORARILY set h/v even though we are not drawing so that
+    ## metric_set_char updates bbox correctly
+    ## NOTE that this will NOT take into account rotation of text
     trans <- decompose(m)
     if (any(trans$sk != 0) || any(round(trans$sc, 2) != 1))
         warning(paste("Scaling and/or skew in canvas transform;",
@@ -119,35 +165,35 @@ metricTransform <- function(x) {
     ## Move to location of text
     textX <- xtoTeX(unit(left, "mm") + unit(trans$tr[1], "pt"))
     textY <- ytoTeX(unit(bottom, "mm") - unit(trans$tr[2], "pt"))
-    ## TEMPORARILY set h/v even though we are not drawing so that
-    ## metric_set_char updates bbox correctly
-    ## NOTE that this will NOT take into account rotation of text
     set("h", textX)
     set("v", textY)
-    set("textDepth", get("textDepth") + 1)
 }
 
-## Have to undo any TEMPORARY h/v offsets
+metricBeginScope <- function() {
+    ## Push current transform
+    mt <- get("metricTransform")
+    set("metricTransform", c(mt[1], mt))
+}
+
 metricEndScope <- function() {
-    td <- get("textDepth")
-    if (td > 0) {
-        set("h", get("savedH"))
-        set("v", get("savedV"))
-        set("textDepth", 0)
-    }
+    ## Pop current transform
+    mt <- get("metricTransform")
+    set("metricTransform", mt[-1])
 }
 
 measureSpecial <- function(x) {
+    ## Ignore "blanks"
+    if (grepl("^ *$", x)) return()
     ## Split by ": " (for paths)
-    tokens <- strsplit(gsub(" *$", "", x), ":")[[1]]
+    tokens <- strsplit(gsub("^ *| *$", "", x), ":")[[1]]
     if (length(tokens) == 1) {
         ## Nothing to do ...
         ## APART from transform
         tokens <- strsplit(gsub(" *$", "", tokens), " ")[[1]]
         switch(tokens[1],
+               `begin-scope`=metricBeginScope(),
                `transform`=metricTransform(tokens[-1]),
                `end-scope`=metricEndScope(),
-               `begin-scope`=,
                `new-path`=,
                `stroke`=,
                `fill`=,
@@ -175,13 +221,18 @@ specialMetric <- function(op) {
         set("pictureY", v)
         set("savedH", h)
         set("savedV", v)
-        set("textDepth", 0)
+        set("metricTransform", list(diag(3)))
         set("inPicture", TRUE)
     } else if (grepl("^end-picture", specialString)) {
+        set("h", get("savedH"))
+        set("v", get("savedV"))        
         set("inPicture", FALSE)
     } else {
         if (get("inPicture")) {
-            measureSpecial(specialString)
+            ## Output may be multiple specials from
+            ## "protocolled" (recorded) output, so split first by ";"
+            specials <- strsplit(specialString, ";")[[1]]
+            lapply(specials, measureSpecial)
         }
     }
 }
@@ -273,24 +324,18 @@ drawNewPath <- function(x) {
 }
 
 drawStroke <- function() {
-    left <- get("pictureLeft")
-    bottom <- get("pictureBottom")
     pathX <- get("pathX")
     pathY <- get("pathY")
     closed <- get("pathClosed")
     mapply(function(px, py, cl) {
                if (length(unlist(px)) > 1) {
                    if (cl) {
-                       grid.path(x=unit(left, "native") +
-                                     unit(unlist(px), "pt"),
-                                 y=unit(bottom, "native") +
-                                     unit(unlist(py), "pt"),
+                       grid.path(x=unit(unlist(px), "pt"),
+                                 y=unit(unlist(py), "pt"),
                                  gp=gpar(fill=NA))
                    } else {
-                       grid.polyline(x=unit(left, "native") +
-                                         unit(unlist(px), "pt"),
-                                     y=unit(bottom, "native") +
-                                         unit(unlist(py), "pt"))
+                       grid.polyline(x=unit(unlist(px), "pt"),
+                                     y=unit(unlist(py), "pt"))
                    }
                }
            },
@@ -300,14 +345,12 @@ drawStroke <- function() {
 }
 
 drawFill <- function() {
-    left <- get("pictureLeft")
-    bottom <- get("pictureBottom")
     pathX <- get("pathX")
     pathY <- get("pathY")
     mapply(function(px, py) {
                if (length(unlist(px)) > 1) {
-                   grid.path(x=unit(left, "native") + unit(unlist(px), "pt"),
-                             y=unit(bottom, "native") + unit(unlist(py), "pt"),
+                   grid.path(x=unit(unlist(px), "pt"),
+                             y=unit(unlist(py), "pt"),
                              gp=gpar(col=NA))
                }
            },
@@ -317,15 +360,13 @@ drawFill <- function() {
 }
 
 drawFillStroke <- function() {
-    left <- get("pictureLeft")
-    bottom <- get("pictureBottom")
     pathX <- get("pathX")
     pathY <- get("pathY")
     closed <- get("pathClosed")
     mapply(function(px, py) {
                if (length(unlist(px)) > 1) {
-                   grid.path(x=unit(left, "native") + unit(unlist(px), "pt"),
-                             y=unit(bottom, "native") + unit(unlist(py), "pt"),
+                   grid.path(x=unit(unlist(px), "pt"),
+                             y=unit(unlist(py), "pt"),
                              gp=gpar(col=NA))
                }
            },
@@ -333,16 +374,12 @@ drawFillStroke <- function() {
     mapply(function(px, py, cl) {
                if (length(unlist(px)) > 1) {
                    if (cl) {
-                       grid.path(x=unit(left, "native") +
-                                     unit(unlist(px), "pt"),
-                                 y=unit(bottom, "native") +
-                                     unit(unlist(py), "pt"),
+                       grid.path(x=unit(unlist(px), "pt"),
+                                 y=unit(unlist(py), "pt"),
                                  gp=gpar(fill=NA))
                    } else {
-                       grid.polyline(x=unit(left, "native") +
-                                         unit(unlist(px), "pt"),
-                                     y=unit(bottom, "native") +
-                                         unit(unlist(py), "pt"))
+                       grid.polyline(x=unit(unlist(px), "pt"),
+                                     y=unit(unlist(py), "pt"))
                    }
                }
            },
@@ -351,41 +388,9 @@ drawFillStroke <- function() {
     popViewport()
 }
 
-## Based on
-## https://math.stackexchange.com/questions/13150/extracting-rotation-scale-values-from-2d-transformation-matrix/13165#13165
-decompose <- function(m) {
-    a <- m[1]
-    b <- m[2]
-    c <- m[3]
-    d <- m[4]
-    e <- m[5]
-    f <- m[6]
-    
-    delta <- a*d - b*c
-
-    translation <- c(e, f)
-    ## Apply the QR-like decomposition.
-    if (a != 0 || b != 0) {
-        r <- sqrt(a*a + b*b)
-        rotation <- if (b > 0) acos(a/r) else -acos(a/r)
-        scale <- c(r, delta/r)
-        skew <- c(atan2((a*c + b*d), (r*r)), 0)
-    } else if (c != 0 || d != 0) {
-        s <- sqrt(c*c + d*d)
-        rotation <- pi/2 - if (d > 0) acos(-c/s) else -acos(c/s)
-        scale <- c(delta/s, s)
-        skew <- c(0, atan2((a*c + b*d), (s*s)))
-    } else {
-        ## a <- b <- c <- d <- 0
-        stop("Invalid transformation matrix")
-    }
-    list(tr=translation, rot=rotation, sc=scale, sk=skew)
-}
-
-## This transform handling is VERY limited at present
-## Based on assumption that canvas transforms are only being used
-## to locate (and possibly rotate) text (nodes) AND that there will only
-## be one such transform in effect at once.
+## This transform handling is limited
+## It only handles translation and rotation
+## It cannot handle a transform that scales or skews 
 drawTransform <- function(x) {
     tokens <- as.numeric(strsplit(x, ",")[[1]])
     m <- rbind(c(tokens[1], tokens[3], tokens[5]),
@@ -394,20 +399,24 @@ drawTransform <- function(x) {
     if (any(trans$sk != 0) || any(round(trans$sc, 2) != 1))
         warning(paste("Scaling and/or skew in canvas transform;",
                       "this will not end well"))
-    ## Transform is relative to picture bottom-left
-    left <- get("pictureLeft")
-    bottom <- get("pictureBottom")
-    ## Text is drawn relative to current DVI location
-    h <- get("h")
-    v <- get("v")
-    pushViewport(viewport(x=unit(left, "native") + unit(trans$tr[1], "pt"),
-                          y=unit(bottom, "native") + unit(trans$tr[2], "pt"),
+    cv <- current.viewport()
+    pushViewport(viewport(x=unit(trans$tr[1], "pt"),
+                          y=unit(trans$tr[2], "pt"),
                           just=c("left", "bottom"),
                           angle=trans$rot/pi*180,
                           ## Scale so that text drawn at bottom-left
-                          xscale=fromTeX(h) + 0:1,
-                          yscale=fromTeX(v) + 0:1))
-    set("textDepth", get("textDepth") + 1)
+                          ## (and subsequent text drawn alongside)
+                          xscale=c(0, diff(cv$xscale)),
+                          yscale=c(0, diff(cv$yscale))))
+    if (get("debug"))
+        grid.rect(gp=gpar(col="grey", fill=NA))
+    ## Update transform depth
+    td <- get("transformDepth")
+    td[1] <- td[1] + 1
+    set("transformDepth", td)
+    ## Update DVI location for text (drawn within this transform)
+    set("h", 0)
+    set("v", 0)
 }
 
 parseValueWithUnit <- function(x) {
@@ -468,29 +477,38 @@ drawViewport <- function(x) {
         names(values) <- names
         gp <- do.call(gpar, handleOpacity(values))
     }
-    topvp <- get("viewport")
+    cv <- current.viewport()
     vp <- viewport(gp=gp,
-                   xscale=topvp$xscale, yscale=topvp$yscale,
+                   xscale=cv$xscale, yscale=cv$yscale,
                    name=vpName())
     pushViewport(vp)
 }
 
 drawBeginScope <- function(x) {
+    ## Push scope viewport
     drawViewport(x)
+    ## Push transform depth
+    td <- get("transformDepth")
+    set("transformDepth", c(0, td))
 }
 
 drawEndScope <- function() {
-    td <- get("textDepth")
-    if (td > 0) {
-        popViewport(td)
-        set("textDepth", 0)
+    ## Pop transform depth
+    td <- get("transformDepth")
+    if (td[1] > 0) {
+        ## Pop transform viewports
+        popViewport(td[1])
     }
+    set("transformDepth", td[-1])
+    ## Pop scope viewport
     popViewport()
 }
 
 drawSpecial <- function(x) {
+    ## Ignore "blanks"
+    if (grepl("^ *$", x)) return()
     ## Split by ": " (for paths)
-    tokens <- strsplit(gsub(" *$", "", x), ":")[[1]]
+    tokens <- strsplit(gsub("^ *| *$", "", x), ":")[[1]]
     if (length(tokens) == 0) {
         warning("Empty special")
     } else if (length(tokens) == 1) {
@@ -526,18 +544,32 @@ gridSpecial <- function(op) {
                           paste(blockValue(op$blocks$op.opparams.string),
                                 collapse=""))
     if (grepl("^begin-picture", specialString)) {
-        x <- fromTeX(get("h"))
-        y <- fromTeX(get("v"))
-        set("pictureLeft", x)
-        set("pictureBottom", y)
-        set("textDepth", 0)
+        h <- get("h")
+        v <- get("v")
+        set("savedH", h)
+        set("savedV", v)
+        x <- fromTeX(h)
+        y <- fromTeX(v)
+        cv <- current.viewport()
+        pushViewport(viewport(unit(x, "native"), unit(y, "native"),
+                              just=c("left", "bottom"),
+                              xscale=cv$xscale, yscale=cv$yscale))
+        if (get("debug"))
+            grid.rect(gp=gpar(col="grey", fill=NA))
+        set("transformDepth", 0)
         set("inPicture", TRUE)
     } else if (grepl("^end-picture", specialString)) {
+        popViewport()
+        set("h", get("savedH"))
+        set("v", get("savedV"))        
         set("inPicture", FALSE)
     } else {
         if (get("inPicture")) {
-            ## "draw" special off screen 
-            drawSpecial(specialString)
+            ## "draw" special off screen
+            ## Output may be multiple specials from
+            ## "protocolled" (recorded) output, so split first by ";"
+            specials <- strsplit(specialString, ";")[[1]]
+            lapply(specials, drawSpecial)
         }
     }
 }

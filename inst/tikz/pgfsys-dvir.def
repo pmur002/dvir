@@ -1,9 +1,10 @@
 
 % Driver commands for XML output
 
-% Modelled on pgfsys-dvisvgm.def
+% Modelled on pgfsys-common-svg.def
+%         and pgfsys-dvisvgm.def
 
-% Helping functions:
+% Helper functions:
 
 \def\pgf@sys@dvirnum#1{%
   {%
@@ -17,12 +18,18 @@
 % Accumulator for paths
 \let\pgf@sys@dvirpath=\pgfutil@empty
 \def\pgf@sys@addtodvirpath#1{\pgfutil@g@addto@macro\pgf@sys@dvirpath{#1}}
-\def\pgf@sys@flushdvirpath{\pgfsysprotocol@literal{\pgf@sys@dvirpath}\global\let\pgf@sys@dvirpath=\pgfutil@empty}
+\def\pgf@sys@flushdvirpath{%
+  \pgfsysprotocol@literal{\pgf@sys@dvirpath;}%
+  \global\let\pgf@sys@dvirpath=\pgfutil@empty%
+}
 
 % Accumulator for gs
 \let\pgf@sys@dvirgs=\pgfutil@empty
 \def\pgf@sys@addtodvirgs#1{\pgfutil@g@addto@macro\pgf@sys@dvirgs{#1}}
-\def\pgf@sys@flushdvirgs{\pgfsysprotocol@literal{\pgf@sys@dvirgs}\global\let\pgf@sys@dvirgs=\pgfutil@empty}
+\def\pgf@sys@flushdvirgs#1{%
+  \pgfsysprotocol@literal{#1 \pgf@sys@dvirgs;}%
+  \global\let\pgf@sys@dvirgs=\pgfutil@empty%
+}
 
 \def\pgf@sys@dvir@gs#1{%
   {\pgf@sys@addtodvirgs{#1\space}}
@@ -56,7 +63,7 @@
   \pgf@sys@addtodvirpath{,}\pgf@sys@dvirnum{#3}%
   \pgf@sys@addtodvirpath{,}\pgf@sys@dvirnum{#4}%
   \pgf@sys@addtodvirpath{,}\pgf@sys@dvirnum{#5}%
-  \pgf@sys@addtodvirpath{,}\pgf@sys@dvirnum{#6}
+  \pgf@sys@addtodvirpath{,}\pgf@sys@dvirnum{#6}%
   \pgf@sys@addtodvirpath{:}%
 }
 % Convert rect to move-line-close so ALL paths start with move
@@ -79,7 +86,6 @@
 \def\pgfsys@closepath{%
   \pgf@sys@addtodvirpath{close}%
   \pgf@sys@addtodvirpath{:}%
-  \pgfsys@dvir@newline %
 }
 
 
@@ -87,23 +93,18 @@
 \newif\ifpgf@sys@dvir@clipnext
 
 \def\pgf@sys@dvir@newpath{%
-  \pgfsysprotocol@bufferedtrue%
-  \pgfsysprotocol@literal{new-path}%
-  \pgf@sys@flushdvirgs%
-  \pgfsys@dvir@newline %
-  \pgfsysprotocol@bufferedfalse%
-  \pgfsysprotocol@literal{}
+  \pgf@sys@flushdvirgs{new-path}%
 }
 \def\pgfsys@stroke{%
   \ifpgf@sys@dvir@clipnext%
     \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
-    \pgfsysprotocol@literal{stroke-clip}%
+    \pgfsysprotocol@literal{stroke-clip;}%
     \pgf@sys@dvir@clipnextfalse%
   \else%
     \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
-    \pgfsysprotocol@literal{stroke}%
+    \pgfsysprotocol@literal{stroke;}%
   \fi%
 }
 
@@ -111,12 +112,12 @@
   \ifpgf@sys@dvir@clipnext%
     \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
-    \pgfsysprotocol@literal{fill-clip}
+    \pgfsysprotocol@literal{fill-clip;}
     \pgf@sys@dvir@clipnextfalse%
   \else%
     \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
-    \pgfsysprotocol@literal{fill}
+    \pgfsysprotocol@literal{fill;}
   \fi%
 }
 
@@ -124,12 +125,12 @@
   \ifpgf@sys@dvir@clipnext%
     \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
-    \pgfsysprotocol@literal{fill-stroke-clip}
+    \pgfsysprotocol@literal{fill-stroke-clip;}
     \pgf@sys@dvir@clipnextfalse%
   \else%
     \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
-    \pgfsysprotocol@literal{fill-stroke}
+    \pgfsysprotocol@literal{fill-stroke;}
   \fi%
 }
 
@@ -139,7 +140,7 @@
   \ifpgf@sys@dvir@clipnext%
     \pgf@sys@dvir@newpath%
     \pgf@sys@flushdvirpath%
-    \pgfsysprotocol@literal{clip}
+    \pgfsysprotocol@literal{clip;}
     \pgf@sys@dvir@clipnextfalse%
   \else%
     \global\let\pgf@sys@dvirpath=\pgfutil@empty
@@ -160,7 +161,7 @@
 % Transformation:
 \def\pgfsys@transformcm#1#2#3#4#5#6{%
   {\pgf@x=#5\pgf@y=#6%
-  \pgfsysprotocol@literal{transform #1,#2,#3,#4,\pgf@sys@tonumber{\pgf@x},\pgf@sys@tonumber{\pgf@y}}}}
+  \pgfsysprotocol@literal{transform #1,#2,#3,#4,\pgf@sys@tonumber{\pgf@x},\pgf@sys@tonumber{\pgf@y};}}}
 
 % Scopes
 \newcount\pgf@sys@dvir@scopecount
@@ -168,16 +169,11 @@
   \edef\pgf@sys@dvir@thescopecount{\the\pgf@sys@dvir@scopecount}%
   \begingroup%
     \pgf@sys@dvir@scopecount=1\relax%
-    \pgfsysprotocol@bufferedtrue%
-    \pgfsysprotocol@literal{begin-scope}%
-    \pgf@sys@flushdvirgs%
-    \pgfsys@dvir@newline %
-    \pgfsysprotocol@bufferedfalse%
-    \pgfsysprotocol@literal{}
+    \pgf@sys@flushdvirgs{begin-scope}%
 }
 \def\pgfsys@endscope{%
     \loop%
-      \pgfsysprotocol@literal{end-scope}%
+      \pgfsysprotocol@literal{end-scope;}%
       \advance\pgf@sys@dvir@scopecount by-1\relax%
     \ifnum\pgf@sys@dvir@scopecount>0\relax%
     \repeat%
@@ -481,10 +477,10 @@
 \def\pgfsys@invoke#1{\ifpgf@sys@dvir@inpicture{\let\#\pgf@sys@dvir@hash\special{dvir:: #1}}\fi}
 \def\pgfsys@beginpicture{%
   \pgf@sys@dvir@inpicturetrue%
-  \pgfsys@invoke{begin-picture}%
+  \pgfsys@invoke{begin-picture;}%
 }
 \def\pgfsys@endpicture{%
-  \pgfsys@invoke{end-picture}%
+  \pgfsys@invoke{end-picture;}%
   \pgf@sys@dvir@inpicturefalse%
 }
 
