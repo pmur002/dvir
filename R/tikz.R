@@ -1,20 +1,4 @@
 
-## Handlers for \special operators (xxx<i>)
-
-## These handlers contain a metrics handler and a grob handler
-ignoreSpecial <- function(op) {}
-
-specialHandler <- function(init=function() {},
-                           metric=ignoreSpecial,
-                           grid=ignoreSpecial) {
-    structure(list(init=init, metric=metric, grid=grid),
-              class="DVIRspecial")
-}
-
-################################################################################
-## Totally ignore special 
-noSpecial <- specialHandler()
-
 ################################################################################
 ## Handle special output that is aimed at 'dvir' (from TikZ)
 
@@ -574,7 +558,7 @@ gridSpecial <- function(op) {
     }
 }
 
-dvirSpecial <- specialHandler(init=specialInit,
+tikzSpecial <- specialHandler(init=specialInit,
                               metric=specialMetric,
                               grid=gridSpecial)
 
@@ -608,7 +592,7 @@ tikzpicturePreamble <- function(packages=NULL) {
 grid.tikz <- function(tex, ...,
                       preamble=getOption("tikz.preamble"),
                       postamble=getOption("dvir.postamble"),
-                      engine=TeXengine("latex", special=dvirSpecial)) {
+                      engine=TeXengine("latex", special=tikzSpecial)) {
     grid.latex(tex, ...,
                preamble=preamble, postamble=postamble, engine=engine)
 }
@@ -616,7 +600,7 @@ grid.tikz <- function(tex, ...,
 grid.tikzpicture <- function(tex, ...,
                              preamble=getOption("tikzpicture.preamble"),
                              postamble=getOption("tikzpicture.postamble"),
-                             engine=TeXengine("latex", special=dvirSpecial)) {
+                             engine=TeXengine("latex", special=tikzSpecial)) {
     grid.latex(tex, ...,
                preamble=preamble, postamble=postamble, engine=engine)
 }

@@ -13,5 +13,5 @@ Imports: devoid
 Suggests: tinytex, gridBezier
 SystemRequirements: A TeX distribution such as TeX Live, fonttools, fontconfig
 Imports: extrafont, grDevices, hexView (>= 0.3-4), xml2, systemfonts (> 0.1.1)
-Collate: globals.R convert.R device.R ops.R fonts.R enc.R metric.R luatex.R tikz.R engine.R read.R print.R grid.R zzz.R
+Collate: globals.R convert.R device.R ops.R fonts.R enc.R metric.R special.R engine.R luatex.R tikz.R read.R print.R grid.R zzz.R
 License: GPL-3

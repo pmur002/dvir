@@ -678,3 +678,34 @@ initLua <- function() {
     initTTXcache()    
 }
 
+###############################
+## User interface
+
+luaEngine <- function(engine="lualatex",
+                      options="--output-format=dvi",
+                      readFonts=luaReadFontInfo,
+                      fontDef=luaDefineFont,
+                      charEnc=luaGetChar,
+                      charMetric=luaCharWidth,
+                      special=noSpecial) {
+    TeXengine(engine, options, readFonts, fontDef, charEnc, charMetric, special)
+}
+
+lualatexEngine <- luaEngine()
+
+luaPreamble <- function(font="Times") {
+    c("\\RequirePackage{luatex85} % For more recent versions of LuaTeX",
+      "\\documentclass[12pt]{standalone}",
+      "\\usepackage{fontspec}",
+      paste0("\\setmainfont[Mapping=text-tex]{", font, "}"),
+      "\\begin{document}",
+      "\\selectfont")
+}
+
+grid.lualatex <- function(tex, ...,
+                          preamble=luaPreamble(),
+                          postamble=getOption("dvir.postamble"),
+                          engine=lualatexEngine()) {
+    grid.latex(tex, ..., 
+               preamble=preamble, postamble=postamble, engine=engine)
+}

@@ -17,8 +17,3 @@ latexEngine <- TeXengine("latex")
 
 xetexEngine <- TeXengine("xelatex", "-no-pdf")
 
-luatexEngine <- TeXengine("lualatex", "--output-format=dvi",
-                          readFonts=luaReadFontInfo,
-                          fontDef=luaDefineFont,
-                          charEnc=luaGetChar,
-                          charMetric=luaCharWidth)
