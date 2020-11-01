@@ -50,7 +50,7 @@ export("readDVI",
        "grid.tikzpicture", "tikzpictureGrob",
 
        "luaPreamble",
-       "tikzPreamble", "tikzpicturePreamble",
+       "tikzPreamble", "tikzpicturePreamble", "tikzpicturePostamble",
 
        "TeXengine", "luaEngine",
        "latexEngine", "lualatexEngine", # "xetexEngine",

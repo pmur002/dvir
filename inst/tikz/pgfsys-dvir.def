@@ -480,7 +480,7 @@
   \pgfsys@invoke{begin-picture;}%
 }
 \def\pgfsys@endpicture{%
-  \pgfsys@invoke{end-picture;}%
+  \pgfsys@invoke{end-picture \the\pgf@picminx,\the\pgf@picminy,\the\pgf@picmaxx,\the\pgf@picmaxy;}%
   \pgf@sys@dvir@inpicturefalse%
 }
 

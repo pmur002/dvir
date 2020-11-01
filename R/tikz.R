@@ -16,78 +16,8 @@ specialInit <- function() {
 
 ## NOTE also that the TikZ locations are in "pt"s
 
-metricMoveTo <- function(x) {
-    xy <- as.numeric(strsplit(x, ",")[[1]])
-    ## Apply current transform
-    mt <- get("metricTransform")[[1]]
-    xy <- mt %*% c(xy, 1)
-    ## Move
-    left <- get("pictureLeft")
-    bottom <- get("pictureBottom")
-    set("pictureX", xtoTeX(unit(left, "mm") + unit(xy[1], "pt")))
-    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(xy[2], "pt")))
-}
-
-metricLineTo <- function(x) {
-    xy <- as.numeric(strsplit(x, ",")[[1]])
-    ## Apply current transform
-    mt <- get("metricTransform")[[1]]
-    xy <- mt %*% c(xy, 1)
-    ## Update bbox for start point
-    updateHoriz(get("pictureX"))
-    updateVert(get("pictureY"))
-    ## Move to end point
-    left <- get("pictureLeft")
-    bottom <- get("pictureBottom")
-    set("pictureX", xtoTeX(unit(left, "mm") + unit(xy[1], "pt")))
-    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(xy[2], "pt")))
-    ## Update bbox for end point
-    updateHoriz(get("pictureX"))
-    updateVert(get("pictureY"))
-}
-
-metricCurveTo <- function(x) {
-    xy <- as.numeric(strsplit(x, ",")[[1]])
-    ## Apply current transform
-    mt <- get("metricTransform")[[1]]
-    xy <- (mt %*% rbind(matrix(xy, nrow=2), 1))[-3,]
-    ## Update bbox for start point
-    updateHoriz(get("pictureX"))
-    updateVert(get("pictureY"))
-    ## Update bbox to include curve extent
-    left <- get("pictureLeft")
-    bottom <- get("pictureBottom")
-    startX <- fromTeX(get("pictureX")) - left
-    startY <- bottom - fromTeX(get("pictureY"))
-    bg <- gridBezier::BezierGrob(x=unit(left, "mm") +
-                                     unit(c(startX, xy[c(1, 3, 5)]),
-                                          units=c("mm", rep("pt", 3))),
-                                 y=unit(bottom, "mm") -
-                                     unit(c(startY, xy[c(2, 4, 6)]),
-                                          units=c("mm", rep("pt", 3))))
-    pts <- gridBezier::BezierPoints(bg)
-    l <- min(pts$x)
-    r <- max(pts$x)
-    b <- max(pts$y)
-    t <- min(pts$y)
-    updateHoriz(xtoTeX(unit(l, "in")))
-    updateHoriz(xtoTeX(unit(r, "in")))
-    updateVert(ytoTeX(unit(b, "in")))
-    updateVert(ytoTeX(unit(t, "in")))
-    ## Move to end of curve
-    set("pictureX", xtoTeX(unit(left, "mm") + unit(as.numeric(xy[5]), "pt")))
-    set("pictureY", ytoTeX(unit(bottom, "mm") - unit(as.numeric(xy[6]), "pt")))
-}
-
-metricPathElement <- function(x) {
-    tokens <- strsplit(x, " ")[[1]]
-    switch(tokens[1],
-           moveto=metricMoveTo(tokens[-1]),
-           lineto=metricLineTo(tokens[-1]),
-           curveto=metricCurveTo(tokens[-1]),
-           close={},
-           stop("unsupported path element"))
-}
+################################################################################
+## Metric sweep
 
 ## Based on
 ## https://math.stackexchange.com/questions/13150/extracting-rotation-scale-values-from-2d-transformation-matrix/13165#13165
@@ -165,6 +95,18 @@ metricEndScope <- function() {
     set("metricTransform", mt[-1])
 }
 
+pictureMetric <- function(x) {
+    tokens <- strsplit(gsub(" *$", "", x), " ")[[1]]
+    bbox <- as.numeric(strsplit(gsub("pt|;", "", tokens[-1]), ",")[[1]])
+    left <- get("pictureLeft")
+    bottom <- get("pictureBottom")
+    ## Update DVI bbox for TikZ bbox
+    updateHoriz(xtoTeX(unit(left, "mm") + unit(bbox[1], "pt")))
+    updateVert(ytoTeX(unit(bottom, "mm") - unit(bbox[2], "pt")))
+    updateHoriz(xtoTeX(unit(left, "mm") + unit(bbox[3], "pt")))
+    updateVert(ytoTeX(unit(bottom, "mm") - unit(bbox[4], "pt")))
+}
+
 measureSpecial <- function(x) {
     ## Ignore "blanks"
     if (grepl("^ *$", x)) return()
@@ -184,42 +126,46 @@ measureSpecial <- function(x) {
                `fill-stroke`={},
                stop("Unsupported TikZ special"))
     } else {
-        ## Path
-        lapply(tokens, metricPathElement)
+        ## Path (do nothing - get bbox at end-picture)
         invisible()
     }
 }
 
 specialMetric <- function(op) {
-    specialString <- gsub("dvir:: ", "",
-                          paste(blockValue(op$blocks$op.opparams.string),
-                                collapse=""))
-    if (grepl("^begin-picture", specialString)) {
-        h <- get("h")
-        v <- get("v")
-        x <- fromTeX(h)
-        y <- fromTeX(v)
-        set("pictureLeft", x)
-        set("pictureBottom", y)
-        set("pictureX", h)
-        set("pictureY", v)
-        set("savedH", h)
-        set("savedV", v)
-        set("metricTransform", list(diag(3)))
-        set("inPicture", TRUE)
-    } else if (grepl("^end-picture", specialString)) {
-        set("h", get("savedH"))
-        set("v", get("savedV"))        
-        set("inPicture", FALSE)
-    } else {
-        if (get("inPicture")) {
-            ## Output may be multiple specials from
-            ## "protocolled" (recorded) output, so split first by ";"
-            specials <- strsplit(specialString, ";")[[1]]
-            lapply(specials, measureSpecial)
+    specialString <- paste(blockValue(op$blocks$op.opparams.string),
+                                collapse="")
+    ## Ignore any other specials
+    if (grepl("^dvir:: ", specialString)) {
+        dvirSpecial <- gsub("dvir:: ", "", specialString)
+        if (grepl("^begin-picture", dvirSpecial)) {
+            h <- get("h")
+            v <- get("v")
+            x <- fromTeX(h)
+            y <- fromTeX(v)
+            set("pictureLeft", x)
+            set("pictureBottom", y)
+            set("savedH", h)
+            set("savedV", v)
+            set("metricTransform", list(diag(3)))
+            set("inPicture", TRUE)
+        } else if (grepl("^end-picture", dvirSpecial)) {
+            pictureMetric(dvirSpecial)
+            set("h", get("savedH"))
+            set("v", get("savedV"))        
+            set("inPicture", FALSE)
+        } else {
+            if (get("inPicture")) {
+                ## Output may be multiple specials from
+                ## "protocolled" (recorded) output, so split first by ";"
+                specials <- strsplit(dvirSpecial, ";")[[1]]
+                lapply(specials, measureSpecial)
+            }
         }
     }
 }
+
+################################################################################
+## 'grid' sweep
 
 ## Generate a grob (gTree) for the figure
 vpNameGen <- function() {
@@ -524,36 +470,39 @@ drawSpecial <- function(x) {
 }
 
 gridSpecial <- function(op) {
-    specialString <- gsub("dvir:: ", "",
-                          paste(blockValue(op$blocks$op.opparams.string),
-                                collapse=""))
-    if (grepl("^begin-picture", specialString)) {
-        h <- get("h")
-        v <- get("v")
-        set("savedH", h)
-        set("savedV", v)
-        x <- fromTeX(h)
-        y <- fromTeX(v)
-        cv <- current.viewport()
-        pushViewport(viewport(unit(x, "native"), unit(y, "native"),
-                              just=c("left", "bottom"),
-                              xscale=cv$xscale, yscale=cv$yscale))
-        if (get("debug"))
-            grid.rect(gp=gpar(col="grey", fill=NA))
-        set("transformDepth", 0)
-        set("inPicture", TRUE)
-    } else if (grepl("^end-picture", specialString)) {
-        popViewport()
-        set("h", get("savedH"))
-        set("v", get("savedV"))        
-        set("inPicture", FALSE)
-    } else {
-        if (get("inPicture")) {
-            ## "draw" special off screen
-            ## Output may be multiple specials from
-            ## "protocolled" (recorded) output, so split first by ";"
-            specials <- strsplit(specialString, ";")[[1]]
-            lapply(specials, drawSpecial)
+    specialString <- paste(blockValue(op$blocks$op.opparams.string),
+                                collapse="")
+    ## Ignore any other specials
+    if (grepl("^dvir:: ", specialString)) {
+        dvirSpecial <- gsub("dvir:: ", "", specialString)
+        if (grepl("^begin-picture", dvirSpecial)) {
+            h <- get("h")
+            v <- get("v")
+            set("savedH", h)
+            set("savedV", v)
+            x <- fromTeX(h)
+            y <- fromTeX(v)
+            cv <- current.viewport()
+            pushViewport(viewport(unit(x, "native"), unit(y, "native"),
+                                  just=c("left", "bottom"),
+                                  xscale=cv$xscale, yscale=cv$yscale))
+            if (get("debug"))
+                grid.rect(gp=gpar(col="grey", fill=NA))
+            set("transformDepth", 0)
+            set("inPicture", TRUE)
+        } else if (grepl("^end-picture", dvirSpecial)) {
+            popViewport()
+            set("h", get("savedH"))
+            set("v", get("savedV"))        
+            set("inPicture", FALSE)
+        } else {
+            if (get("inPicture")) {
+                ## "draw" special off screen
+                ## Output may be multiple specials from
+                ## "protocolled" (recorded) output, so split first by ";"
+                specials <- strsplit(dvirSpecial, ";")[[1]]
+                lapply(specials, drawSpecial)
+            }
         }
     }
 }
@@ -564,6 +513,13 @@ tikzSpecial <- specialHandler(init=specialInit,
 
 ################################################################################
 ## User interface
+
+tikzBBox <- function(x1, y1, x2, y2) {
+    paste(paste0("\\pgfresetboundingbox",
+                 "\\useasboundingbox (", x1, ",", y1,
+                 ") rectangle (", x2, ",", y2, ");"),
+          collapse="\n")
+}
 
 tikzPreamble <- function(packages=NULL) {
     if (!is.null(packages)) {
@@ -589,8 +545,21 @@ tikzpicturePreamble <- function(packages=NULL) {
           sep="\n")
 }
 
+tikzpicturePostamble <- function(bbox=NULL) {
+    postamble <- paste(c("\\end{tikzpicture}",
+                         dvirPostamble),
+                       collapse="\n")
+    if (!is.null(bbox)) {
+        paste(tikzBBox(bbox[1], bbox[2], bbox[3], bbox[4]),
+              postamble,
+              collapse="\n")
+    } else {
+        postamble
+    }
+}
+
 tikzGrob <- function(tex, ...,
-                     preamble=getOption("tikz.preamble"),
+                     preamble=tikzPreamble(),
                      postamble=getOption("dvir.postamble"),
                      engine=TeXengine("latex", special=tikzSpecial)) {
     latexGrob(tex, ...,
@@ -602,8 +571,9 @@ grid.tikz <- function(...) {
 }
 
 tikzpictureGrob <- function(tex, ...,
-                            preamble=getOption("tikzpicture.preamble"),
-                            postamble=getOption("tikzpicture.postamble"),
+                            bbox=NULL,
+                            preamble=tikzpicturePreamble(),
+                            postamble=tikzpicturePostamble(bbox),
                             engine=TeXengine("latex", special=tikzSpecial)) {
     latexGrob(tex, ...,
               preamble=preamble, postamble=postamble, engine=engine)
