@@ -12,7 +12,7 @@ latexGrob(tex, x = 0.5, y = 0.5, default.units = "npc", just = "centre",
           rot = 0, device = names(dev.cur()), name = NULL,
           preamble=getOption("dvir.preamble"),
           postamble=getOption("dvir.postamble"),
-          engine=texEngine, tinytex=FALSE) 
+          engine=latexEngine, tinytex=FALSE, file=NULL) 
 grid.latex(...)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -34,6 +34,8 @@ grid.latex(...)
     code.}
   \item{tinytex}{Should \pkg{dvir} attempt to use \pkg{tinytex} to
     perform the processing?}
+  \item{file}{The name of a file to read LaTeX code from. If \code{tex}
+    is missing, this file is read.}
   \item{\dots}{
     Arguments passed to \code{latexGrob}.
   }
@@ -43,7 +45,7 @@ grid.latex(...)
   to produce a DVI file, reads the DVI file, and renders the result
   using \pkg{grid}.
 
-  The default engine is the \code{\link{texEngine}}, which runs
+  The default engine is the \code{\link{latexEngine}}, which runs
   \code{latex} to generate DVI;  an alternative
   is the \code{\link{luatexEngine}}, which runs \code{dvilualatex}
   to generate DVI.

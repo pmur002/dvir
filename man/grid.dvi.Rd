@@ -14,11 +14,11 @@ dviGrob(dvi, \dots)
 \method{dviGrob}{character}(dvi, x = 0.5, y = 0.5,
         default.units = "npc", just = "centre", 
         rot = 0, device = names(dev.cur()), name = NULL,
-        engine=texEngine, \dots)
+        engine=latexEngine, \dots)
 \method{dviGrob}{DVI}(dvi, x = 0.5, y = 0.5,
         default.units = "npc", just = "centre", 
         rot = 0, device = names(dev.cur()), name = NULL, 
-        engine=texEngine, \dots)
+        engine=latexEngine, \dots)
 
 grid.dvi(\dots)
 }
