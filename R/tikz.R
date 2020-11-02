@@ -384,13 +384,13 @@ parseSetting <- function(x) {
 handleOpacity <- function(x) {
     if ("stroke-opacity" %in% names(x)) {
         if ("col" %in% names(x)) {
-            x$col <- adjustcolor(x$col, alpha=x$"stroke-opacity")
+            x$col <- adjustcolor(x$col, alpha.f=x$"stroke-opacity")
         }
         x$"stroke-opacity" <- NULL
     }
     if ("fill-opacity" %in% names(x)) {
         if ("fill" %in% names(x)) {
-            x$fill <- adjustcolor(x$fill, alpha=x$"fill-opacity")
+            x$fill <- adjustcolor(x$fill, alpha.f=x$"fill-opacity")
         }
         x$"fill-opacity" <- NULL
     }

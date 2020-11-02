@@ -17,12 +17,12 @@ tikzpictureGrob(tex, ...,
                 bbox=NULL,
                 preamble=tikzpicturePreamble(),
                 postamble=tikzpicturePostamble(bbox),
-                engine=TeXengine("latex", special=tikzSpecial)) {
+                engine=TeXengine("latex", special=tikzSpecial))
 grid.tikzpicture(...)
 tikzGrob(tex, ...,
          preamble=tikzPreamble(),
          postamble=getOption("dvir.postamble"),
-         engine=TeXengine("latex", special=tikzSpecial)) {
+         engine=TeXengine("latex", special=tikzSpecial))
 grid.tikz(...)
 }
 %- maybe also 'usage' for other objects documented here.

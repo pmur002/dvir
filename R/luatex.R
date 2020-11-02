@@ -705,7 +705,7 @@ luaPreamble <- function(font="Times") {
 lualatexGrob <- function(tex, ...,
                          preamble=luaPreamble(),
                          postamble=getOption("dvir.postamble"),
-                         engine=lualatexEngine()) {
+                         engine=lualatexEngine) {
     latexGrob(tex, ..., 
               preamble=preamble, postamble=postamble, engine=engine)
 }

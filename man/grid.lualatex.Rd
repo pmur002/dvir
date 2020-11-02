@@ -13,7 +13,7 @@
 lualatexGrob(tex, ...,
              preamble=luaPreamble(),
              postamble=getOption("dvir.postamble"),
-             engine=lualatexEngine()) {
+             engine=lualatexEngine)
 grid.lualatex(...)
 luaPreamble(font="Times")
 lualatexEngine

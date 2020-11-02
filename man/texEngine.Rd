@@ -17,7 +17,7 @@ TeXengine(engine, options="",
           fontDef=defineFont,
           charEnc=getChar,
           charMetric=charWidth,
-          special=noSpecial) {
+          special=noSpecial)
 }
 \arguments{
 \item{engine}{The command to run to process LaTeX documents.}
