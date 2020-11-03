@@ -53,7 +53,10 @@ export("readDVI",
        "tikzPreamble", "tikzpicturePreamble", "tikzpicturePostamble",
 
        "TeXengine", 
-       "latexEngine", "lualatexEngine", # "xetexEngine",
+       "latexEngine",
+       "luaEngine",
+       "lualatexEngine",
+       ## "xetexEngine",
        
        "noSpecial", "tikzSpecial",
        

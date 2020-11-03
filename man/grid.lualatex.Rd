@@ -2,7 +2,6 @@
 \alias{grid.lualatex}
 \alias{lualatexGrob}
 \alias{luaPreamble}
-\alias{lualatexEngine}
 \title{
   Render LaTeX in R with LuaTeX engine
 }
@@ -16,7 +15,6 @@ lualatexGrob(tex, ...,
              engine=lualatexEngine)
 grid.lualatex(...)
 luaPreamble(font="Times")
-lualatexEngine
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -40,7 +38,7 @@ lualatexEngine
   create variations on that.
 
   The default engine is the \code{\link{lualatexEngine}}, which runs
-  \code{lualatex} to generate DVI.
+  \code{lualatex} to generate DVI.  
 }
 \value{
   A \code{"DVIgrob"} object.
