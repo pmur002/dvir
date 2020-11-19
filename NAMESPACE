@@ -4,7 +4,8 @@ import("hexView")
 importFrom("extrafont",
            "fonttable")
 importFrom("systemfonts",
-           "reset_font_cache")
+           "reset_font_cache",
+           "system_fonts")
 importFrom("grDevices",
            "adjustcolor",
            "dev.cur",

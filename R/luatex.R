@@ -12,7 +12,7 @@ for (i in 171:234) {
     assign(paste0("lua_font_info_", i), op_fnt_num)
 }
 
-## set3 instructions generate a subset font
+## set3 instructions generate a subset font IF first byte is 0x0F
 lua_font_info_130 <- function(op) {
     fonts <- get("fonts")
     f <- get("f")
@@ -21,16 +21,18 @@ lua_font_info_130 <- function(op) {
         stop("Sorry, no support for non-CM fonts outside Cairo devices (for now)")
     } else if (cairoDevice(device)) {
         raw <- op$blocks$op.opparams$fileRaw
-        fontname <- fonts[[f]]$postscriptname
-        index <- as.numeric(as.hexmode(paste(raw[2:3], collapse="")))
-        fontfile <- getFontFile(fontname)
-        ## Generate special font for char
-        customFont <- subsetFont(fontfile, index)
-        ## Get special font into font cache (and FontConfig configuration)
-        addFontConfig(customFont$family, customFont$postscriptname,
-                      ## Special fonts are in temporary directory that
-                      ## has already been added to FontConfig configuration
-                      dir=NULL)
+        if (as.numeric(raw[1]) >= 15) {
+            fontname <- fonts[[f]]$postscriptname
+            index <- as.numeric(as.hexmode(paste(raw[2:3], collapse="")))
+            fontfile <- getFontFile(fontname)
+            ## Generate special font for char
+            customFont <- subsetFont(fontfile, index)
+            ## Get special font into font cache (and FontConfig configuration)
+            addFontConfig(customFont$family, customFont$postscriptname,
+                          ## Special fonts are in temporary directory that
+                          ## has already been added to FontConfig configuration
+                          dir=NULL)
+        }
     }
 }
 
@@ -80,7 +82,8 @@ luaFontName <- function(fontname) {
         } else {
             ## Otherwise assume this is a TeX font
             ## (that luaotfload-tool will find)
-            name <- gsub("[[]|[]]", "", name)
+            ## Remove square brackets and any file suffix
+            name <- gsub("[[]|[]]|[.]ttf$|[.]otf$", "", name)
         }
     }
     name
@@ -96,22 +99,41 @@ luaFontInfo <- function(fontname) {
     if (grepl("found!$", fontSearchResult[1])) {
         fontFile <- gsub('^[^"]+"|"$', "", fontSearchResult[2])
     } else {
-        stop("Lua font not found on system")
+        stop(sprintf("Lua font not found on system (%s)", fontname))
     }
     ## Try matching exact font file (should work for TTF system fonts)
     fontdb <- fonttable()
     dbline <- grep(normalizePath(fontFile), fontdb$fontfile, ignore.case=TRUE)
-    if (length(dbline) == 0) {
-        ## Try just matching font FullName
-        dbline <- grep(fontname, fontdb$FullName, ignore.case=TRUE)
-        if (length(dbline)) {
-            warnings <- "Matched font by name (not file)"
-        }
-    }
-    if (length(dbline)) {
+    found <- length(dbline) > 0
+    if (found) {
         ## If more than one line matches, use first one
         result <- fontdb[dbline[1], ]
-        attr(result, "warnings") <- warnings
+    } else if (!found) {
+        ## Try OpenType fonts
+        sysfonts <- system_fonts()
+        match <- grep(normalizePath(fontFile), sysfonts$path, ignore.case=TRUE)
+        if (length(match) > 0) {
+            ## Mock up a partial fonttable() line
+            ## (just containing the information we need)
+            ## We cannot produce a .afm file in this case, but
+            ## this should only be used on a Cairo device with non-CM font,
+            ## so I think that is OK
+            result <- data.frame(afmfile="",
+                                 fontfile=sysfonts$path[match],
+                                 FullName=sysfonts$name[match],
+                                 FamilyName=sysfonts$family[match])
+            found <- TRUE
+        }
+    }
+    if (!found) {
+        ## Try just matching font FullName (back amongst TTF fonts)
+        dbline <- grep(fontname, fontdb$FullName, ignore.case=TRUE)
+        if (length(dbline)) {
+            ## If more than one line matches, use first one
+            result <- fontdb[dbline[1], ]
+        } else {
+            stop(sprintf("Unable to find font info (%s)", fontname))
+        }
     }
     ## Add directory for local font
     result$dir <- attr(fontname, "dir")
@@ -203,8 +225,13 @@ luaDefinePDFFont <- function(fontInfo) {
 }
 
 luaDefineCairoFont <- function(fontInfo) {
-    list(family=fontInfo$FamilyName,
-         dir=fontInfo$dir)
+    familyName <- fontInfo$FamilyName
+    list(name=familyName,
+         file=fontInfo$fontfile,
+         postscriptname=fontInfo$FullName,
+         family=familyName,
+         dir=fontInfo$dir,
+         size=10)
 }
 
 luaDefineFont <- function(fontname, device) {
@@ -220,9 +247,7 @@ luaDefineFont <- function(fontname, device) {
         } else if (pdfDevice(device)) {
             defn <- luaDefinePDFFont(fontInfo)
         } else if (cairoDevice(device)) {
-            ## Also get information like PostScriptName
-            defn <- luaDefinePDFFont(fontInfo)
-            defn <- c(defn, luaDefineCairoFont(fontInfo))
+            defn <- luaDefineCairoFont(fontInfo)
             addFontConfig(defn$family, defn$postscriptname, defn$dir)
         } else {
             ## TODO
@@ -251,11 +276,17 @@ luaGetChar <- function(raw, fontname, device) {
                },
                ## Two bytes is assumed to be UTF16BE from set2 op
                iconv(list(raw), from="UTF16BE", to="UTF-8"),
-               ## Three bytes is assumed to be non-UNICODE char from set3 op
-               ## First byte is 0x0F
-               ## Second two bytes are integer index into non-UNICODE glyphs
-               nonUNICODEchar(as.numeric(as.hexmode(paste(raw[2:3], collapse=""))),
-                              fontname),
+               ## Three bytes is assumed to be UTF32BE from set3 op
+               if (as.numeric(raw[1]) >= 15) {
+                   ## UNLESS first byte is 0x0F, then ...
+                   ## Three bytes is assumed to be non-UNICODE char from set3 op
+                   ## Second two bytes are integer index into non-UNICODE glyphs
+                   nonUNICODEchar(as.numeric(as.hexmode(paste(raw[2:3],
+                                                              collapse=""))),
+                                  fontname)
+               } else {
+                   iconv(list(c(as.raw(0), raw)), from="UTF32BE", to="UTF-8")
+               },
                ## Have not yet witnessed set4 op
                stop("set4 not yet supported"))
     } else {
@@ -324,12 +355,17 @@ getGlyphName <- function(raw, device, fontfile, filesuffix) {
                        paste0("00", toupper(as.character(raw))),
                        ## Two bytes is assumed to be UTF16BE from set2 op
                        paste(toupper(as.character(raw)), collapse=""),
-                       ## Three bytes is assumed to be non-UNICODE char
-                       ##   from set3 op
-                       ## First byte is 0x0F
-                       ## Second two bytes are integer index into
-                       ##   non-UNICODE glyphs
-                       paste(raw[2:3], collapse=""),
+                       ## Three bytes is assumed to be UTF32BE from set3 op
+                       if (as.numeric(raw[1]) >= 15) {
+                           ## UNLESS first byte is 0x0F, then ...
+                           ## Three bytes is assumed to be non-UNICODE char
+                           ##   from set3 op
+                           ## Second two bytes are integer index into
+                           ##   non-UNICODE glyphs
+                           paste(raw[2:3], collapse="")
+                       } else {
+                           paste(toupper(as.character(raw)), collapse="")
+                       },
                        ## Have not yet witnessed set4 op
                        stop("set4 not yet supported"))
         ## May generate more than one option
@@ -340,8 +376,15 @@ getGlyphName <- function(raw, device, fontfile, filesuffix) {
                          paste0("uni", code),
                          cmapName(code, fontfile, filesuffix)),
                        ## Find non-UNICODE glyph name
-                       getGlyph(getGlyphs(fontfile, filesuffix), 
-                                as.numeric(as.hexmode(code)))$name,
+                       if (as.numeric(raw[1]) >= 15) {
+                           getGlyph(getGlyphs(fontfile, filesuffix), 
+                                    as.numeric(as.hexmode(code)))$name
+                       } else {
+                           c(AdobeName(code),
+                             paste0("uni", code),
+                             paste0("u", gsub("^0", "", code)),
+                             cmapName(code, fontfile, filesuffix))
+                       },
                        stop("set4 not yet supported"))
     } else {
         stop("Graphics device unsupported")
