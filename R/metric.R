@@ -236,7 +236,8 @@ initMetricDev <- function() {
     metricDev <- get("metricPDF")
     if (is.null(metricDev)) {
         cd <- dev.cur()
-        on.exit(dev.set(cd))
+        if (cd != 1)
+            on.exit(dev.set(cd))
         metricDev <- pdf(NULL)
         set("metricPDF", dev.cur())
     }
@@ -250,6 +251,19 @@ setMetricDev <- function() {
         set("metricPDF", NULL)
         initMetricDev()
         setMetricDev()
+    }
+}
+
+killMetricDev <- function() {
+    cd <- dev.cur()
+    if (cd != 1)
+        on.exit(dev.set(cd))
+    ## Close down the metric PDF device (if it is open)
+    metricDev <- get("metricPDF")
+    if (!is.null(metricDev)) {
+        dev.set(metricDev)
+        dev.off()
+        set("metricPDF", NULL)
     }
 }
 

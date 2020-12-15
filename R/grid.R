@@ -236,6 +236,8 @@ dviGrob.DVI <- function(dvi,
                    yscale=c(metrics$bottom, metrics$top),
                    name="dvi.vp")
     grobs <- dvigrid(dvi, device, engine, vp)
+    ## Ensure that metric PDF device is killed
+    killMetricDev()
     gTree(children=gList(grobs), fonts=fonts, name=name, cl="DVIgrob")
 }
 
