@@ -4,7 +4,19 @@
 
 \section{Changes in version 0.3-1}{
   \itemize{
-    \item 
+    \item Add support for Open Type fonts (in TeX documents) on
+    Cairo-based devices.  Makes use of \pkg{systemfonts} package.
+
+    \item Add support for \code{set3} operations (in DVI files),
+    e.g., math glyphs in a UNICODE font.
+    
+    \item New function \code{typeset()} so users can easily perform the
+    generate-tex-doc-and-process-to-dvi-file step (separate from reading
+    DVI file, which is \code{readDVI()}, and separate from rendering, which is
+    \code{grid.dvi()}).
+
+    \item Bug fix to ensure that the temporary PDF device that is opened
+    for font metric calculations gets closed again.
   }
 }
 
