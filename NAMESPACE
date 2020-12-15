@@ -41,7 +41,9 @@ importFrom("xml2",
            "xml_set_text",
            "xml_text")
 
-export("readDVI",
+export("typeset",
+
+       "readDVI",
 
        "grid.dvi", "dviGrob",
 

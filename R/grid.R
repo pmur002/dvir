@@ -243,17 +243,12 @@ grid.dvi <- function(...) {
     grid.draw(dviGrob(...))
 }
 
-latexGrob <- function(tex,
-                      x=0.5, y=0.5,
-                      default.units="npc", just="centre",
-                      rot=0,
-                      device=names(dev.cur()),
-                      name=NULL,
-                      preamble=getOption("dvir.preamble"),
-                      postamble=getOption("dvir.postamble"),
-                      engine=latexEngine,
-                      tinytex=FALSE,
-                      file=NULL) {
+typeset <- function(tex,
+                    preamble=getOption("dvir.preamble"),
+                    postamble=getOption("dvir.postamble"),
+                    engine=latexEngine,
+                    tinytex=FALSE,
+                    file=NULL) {
     haveTinyTeX <- tinytex && requireNamespace("tinytex", quietly=TRUE)
     if (!haveTinyTeX) {
         haveLaTeX <- nchar(Sys.which("latex"))
@@ -279,6 +274,26 @@ latexGrob <- function(tex,
         system(paste0(engine$engine, " ", engine$options,
                       " -output-directory=", tempdir(), " ", texFile))
     }
+    invisible(dviFile)
+}
+
+latexGrob <- function(tex,
+                      x=0.5, y=0.5,
+                      default.units="npc", just="centre",
+                      rot=0,
+                      device=names(dev.cur()),
+                      name=NULL,
+                      preamble=getOption("dvir.preamble"),
+                      postamble=getOption("dvir.postamble"),
+                      engine=latexEngine,
+                      tinytex=FALSE,
+                      file=NULL) {
+    if (missing(tex)) {
+        if (is.null(file))
+            stop("Must specify one of 'tex' or 'file'")
+        tex <- readLines(file)
+    }
+    dviFile <- typeset(tex, preamble, postamble, engine, tinytex)
     dvi <- readDVI(dviFile)
     dviGrob(dvi, x, y, default.units, just, rot, device, name, engine)
 }
