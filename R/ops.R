@@ -218,9 +218,21 @@ op_font_def <- function(op) {
     design <- blockValue(op$blocks$op.opparams.d)
     mag <- get("mag")
     fonts <- get("fonts")
-    fonts[[fontnum]] <- fontdef
-    fonts[[fontnum]]$size <- fontdef$size*mag*scale/(1000*design)
-    set("fonts", fonts)
+    
+    if (is.null(get("fonts")[[fontnum]])) {
+    
+        fonts[[fontnum]] <- fontdef
+        fonts[[fontnum]]$size <- fontdef$size*mag*scale/(1000*design)
+        fonts[[fontnum]]$op <- op
+        set("fonts", fonts)
+    }
+    else if (!(identical(op, fonts[[fontnum]]$op))){
+    
+        fonts[[fontnum]] <- fontdef
+        fonts[[fontnum]]$size <- fontdef$size*mag*scale/(1000*design)
+        fonts[[fontnum]]$op <- op
+        set("fonts", fonts)
+    }
 }
 
 ## pre
@@ -231,7 +243,7 @@ op_pre <- function(op) {
     set("num", num)
     set("den", den)
     set("mag", mag)
-    set("fonts", vector("list", 255))
+    if (get("initFonts")) set("fonts", vector("list", 255))
     engine <- get("engine")
     engine$special$init()
 }
