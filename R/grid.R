@@ -205,8 +205,9 @@ dviGrob.character <- function(dvi,
                               device=names(dev.cur()),
                               name=NULL,
                               engine=latexEngine,
+                              initFonts=getOption("dvir.initFonts"),
                               ...) {
-    dviGrob(readDVI(dvi), x, y, default.units, just, rot, device, name, engine)
+    dviGrob(readDVI(dvi), x, y, default.units, just, rot, device, name, engine, initFonts)
 }
 
 dviGrob.DVI <- function(dvi,
@@ -216,7 +217,10 @@ dviGrob.DVI <- function(dvi,
                         device=names(dev.cur()),
                         name=NULL,
                         engine=latexEngine,
+                        initFonts=getOption("dvir.initFonts"),
                         ...) {
+    set("initFonts", initFonts)
+
     if (!is.unit(x))
         x <- unit(x, default.units)
     if (!is.unit(y))
@@ -289,7 +293,9 @@ latexGrob <- function(tex,
                       postamble=getOption("dvir.postamble"),
                       engine=latexEngine,
                       tinytex=FALSE,
-                      file=NULL) {
+                      file=NULL,
+                      initFonts=getOption("dvir.initFonts")
+) {
     if (missing(tex)) {
         if (is.null(file))
             stop("Must specify one of 'tex' or 'file'")
@@ -297,7 +303,7 @@ latexGrob <- function(tex,
     }
     dviFile <- typeset(tex, preamble, postamble, engine, tinytex)
     dvi <- readDVI(dviFile)
-    dviGrob(dvi, x, y, default.units, just, rot, device, name, engine)
+    dviGrob(dvi, x, y, default.units, just, rot, device, name, engine, initFonts)
 }
     
 grid.latex <- function(...) {

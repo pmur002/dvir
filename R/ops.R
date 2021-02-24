@@ -209,18 +209,36 @@ op_fnt_num <- function(op) {
 
 ## font_def<i>
 op_font_def <- function(op) {
-    fontname <- paste(blockValue(op$blocks$op.opparams.fontname.name),
-                      collapse="")
-    engine <- get("engine")
-    fontdef <- engine$fontDef(fontname, get("device"))
-    fontnum <- blockValue(op$blocks$op.opparams.k) + 1
-    scale <- blockValue(op$blocks$op.opparams.s)
-    design <- blockValue(op$blocks$op.opparams.d)
-    mag <- get("mag")
+    
     fonts <- get("fonts")
-    fonts[[fontnum]] <- fontdef
-    fonts[[fontnum]]$size <- fontdef$size*mag*scale/(1000*design)
-    set("fonts", fonts)
+    fontnum <- blockValue(op$blocks$op.opparams.k) + 1
+    
+    if (is.null(fonts[[fontnum]]) || !(identical_font(op, fonts[[fontnum]]$op))) {
+        
+        
+        fontname <- paste(blockValue(op$blocks$op.opparams.fontname.name),
+                          collapse="")
+        engine <- get("engine")
+        fontdef <- engine$fontDef(fontname, get("device"))
+        scale <- blockValue(op$blocks$op.opparams.s)
+        design <- blockValue(op$blocks$op.opparams.d)
+        mag <- get("mag")
+        fonts[[fontnum]] <- fontdef
+        fonts[[fontnum]]$size <- fontdef$size*mag*scale/(1000*design)
+        fonts[[fontnum]]$op <- op
+        set("fonts", fonts)
+    }
+}
+
+identical_font <- function(op1, op2) {
+    
+    identical(blockValue(op1$blocks$op.opcode), blockValue(op2$blocks$op.opcode)) &&
+    identical(blockValue(op1$blocks$op.opparams.k), blockValue(op2$blocks$op.opparams.k)) &&
+    identical(blockValue(op1$blocks$op.opparams.c), blockValue(op2$blocks$op.opparams.c)) &&
+    identical(blockValue(op1$blocks$op.opparams.s), blockValue(op2$blocks$op.opparams.s)) &&
+    identical(blockValue(op1$blocks$op.opparams.d), blockValue(op2$blocks$op.opparams.d)) &&
+    identical(blockValue(op1$blocks$op.opparams.fontname.name), blockValue(op2$blocks$op.opparams.fontname.name))
+
 }
 
 ## pre
@@ -231,7 +249,7 @@ op_pre <- function(op) {
     set("num", num)
     set("den", den)
     set("mag", mag)
-    set("fonts", vector("list", 255))
+    if (get("initFonts") || is.null(get("fonts"))) set("fonts", vector("list", 255))
     engine <- get("engine")
     engine$special$init()
 }
