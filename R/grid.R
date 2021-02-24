@@ -205,6 +205,7 @@ dviGrob.character <- function(dvi,
                               device=names(dev.cur()),
                               name=NULL,
                               engine=latexEngine,
+                              initFonts=getOption("dvir.initFonts"),
                               ...) {
     dviGrob(readDVI(dvi), x, y, default.units, just, rot, device, name, engine, initFonts)
 }
@@ -216,8 +217,9 @@ dviGrob.DVI <- function(dvi,
                         device=names(dev.cur()),
                         name=NULL,
                         engine=latexEngine,
+                        initFonts=getOption("dvir.initFonts"),
                         ...) {
-    set("initFonts", getOption("dvir.initFonts"))
+    set("initFonts", initFonts)
 
     if (!is.unit(x))
         x <- unit(x, default.units)
@@ -292,7 +294,7 @@ latexGrob <- function(tex,
                       engine=latexEngine,
                       tinytex=FALSE,
                       file=NULL,
-                      initFonts = getOption("dvir.initFonts")
+                      initFonts=getOption("dvir.initFonts")
 ) {
     if (missing(tex)) {
         if (is.null(file))

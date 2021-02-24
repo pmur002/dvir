@@ -12,6 +12,6 @@ dvirPostamble <- "\\end{document}"
 
     options(dvir.preamble=dvirPreamble,
             dvir.postamble=dvirPostamble,
-            dvir.initFonts=TRUE)
+            dvir.initFonts=FALSE)
 }
 
