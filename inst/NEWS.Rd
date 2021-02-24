@@ -2,6 +2,16 @@
 \title{NEWS file for the dvir package}
 \encoding{UTF-8}
 
+\section{Changes in version 0.3-2}{
+  \itemize{
+    \item Add \code{initFonts} argument to \code{grid.latex()} et al.,
+    which by default is \code{FALSE} (settable by
+    \code{options("initFonts")}), which means that font information
+    read from DVI files is retained across calls to \code{grid.latex()},
+    which results in speed improvement (when the same fonts are reused).
+  }
+}
+
 \section{Changes in version 0.3-1}{
   \itemize{
     \item Add support for Open Type fonts (in TeX documents) on
