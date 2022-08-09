@@ -254,7 +254,8 @@ typeset <- function(tex,
                     postamble=getOption("dvir.postamble"),
                     engine=latexEngine,
                     tinytex=FALSE,
-                    file=NULL) {
+                    file=NULL,
+                    quiet=TRUE) {
     haveTinyTeX <- tinytex && requireNamespace("tinytex", quietly=TRUE)
     if (!haveTinyTeX) {
         haveLaTeX <- nchar(Sys.which("latex"))
@@ -278,7 +279,8 @@ typeset <- function(tex,
                          engine_args=engine$options)
     } else {
         system(paste0(engine$engine, " ", engine$options,
-                      " -output-directory=", tempdir(), " ", texFile))
+                      " -output-directory=", tempdir(), " ", texFile),
+               ignore.stdout=quiet)
     }
     invisible(dviFile)
 }
@@ -294,16 +296,18 @@ latexGrob <- function(tex,
                       engine=latexEngine,
                       tinytex=FALSE,
                       file=NULL,
-                      initFonts=getOption("dvir.initFonts")
-) {
+                      initFonts=getOption("dvir.initFonts"),
+                      quiet=TRUE) {
     if (missing(tex)) {
         if (is.null(file))
             stop("Must specify one of 'tex' or 'file'")
         tex <- readLines(file)
     }
-    dviFile <- typeset(tex, preamble, postamble, engine, tinytex)
+    dviFile <- typeset(tex, preamble, postamble, engine, tinytex,
+                       quiet=quiet)
     dvi <- readDVI(dviFile)
-    dviGrob(dvi, x, y, default.units, just, rot, device, name, engine, initFonts)
+    dviGrob(dvi, x, y, default.units, just, rot, device,
+            name, engine, initFonts)
 }
     
 grid.latex <- function(...) {

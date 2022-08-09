@@ -14,11 +14,15 @@ dviGrob(dvi, \dots)
 \method{dviGrob}{character}(dvi, x = 0.5, y = 0.5,
         default.units = "npc", just = "centre", 
         rot = 0, device = names(dev.cur()), name = NULL,
-        engine=latexEngine, \dots)
+        engine=latexEngine,
+        initFonts=getOption("dvir.initFonts"),
+        \dots)
 \method{dviGrob}{DVI}(dvi, x = 0.5, y = 0.5,
         default.units = "npc", just = "centre", 
         rot = 0, device = names(dev.cur()), name = NULL, 
-        engine=latexEngine, \dots)
+        engine=latexEngine,
+        initFonts=getOption("dvir.initFonts"),
+        \dots)
 
 grid.dvi(\dots)
 }
@@ -37,6 +41,8 @@ grid.dvi(\dots)
     the output is to be drawn on.}
   \item{name}{Character value giving name for the grob.}
   \item{engine}{The TeX engine that was used to generate the DVI file.}
+  \item{initFonts}{Whether to reset the font cache;  set to \code{FALSE}
+    to allow font caching across multiple calls.}
   \item{\dots}{
     Arguments specific to methods of \code{dviGrob} or,
     for \code{grid.dvi}, arguments passed to \code{dviGrob}.

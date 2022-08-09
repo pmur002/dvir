@@ -12,7 +12,9 @@ latexGrob(tex, x = 0.5, y = 0.5, default.units = "npc", just = "centre",
           rot = 0, device = names(dev.cur()), name = NULL,
           preamble=getOption("dvir.preamble"),
           postamble=getOption("dvir.postamble"),
-          engine=latexEngine, tinytex=FALSE, file=NULL) 
+          engine=latexEngine, tinytex=FALSE, file=NULL,
+          initFonts=getOption("dvir.initFonts"),
+          quiet=TRUE) 
 grid.latex(...)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -36,6 +38,9 @@ grid.latex(...)
     perform the processing?}
   \item{file}{The name of a file to read LaTeX code from. If \code{tex}
     is missing, this file is read.}
+  \item{initFonts}{Whether to reset the font cache;  set to \code{FALSE}
+    to allow font caching across multiple calls.}
+  \item{quiet}{Suppress TeX engine output?}
   \item{\dots}{
     Arguments passed to \code{latexGrob}.
   }

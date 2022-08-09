@@ -2,6 +2,13 @@
 \title{NEWS file for the dvir package}
 \encoding{UTF-8}
 
+\section{Changes in version 0.3-3}{
+  \itemize{
+    \item Add \code{quiet} argument to \code{typeset()} and
+    \code{grid.latex()} to suppress TeX engine output.
+  }
+}
+
 \section{Changes in version 0.3-2}{
   \itemize{
     \item Add \code{initFonts} argument to \code{grid.latex()} et al.,

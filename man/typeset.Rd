@@ -10,7 +10,7 @@
 typeset(tex, 
         preamble=getOption("dvir.preamble"),
         postamble=getOption("dvir.postamble"),
-        engine=latexEngine, tinytex=FALSE, file=NULL) 
+        engine=latexEngine, tinytex=FALSE, file=NULL, quiet=TRUE) 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -23,6 +23,7 @@ typeset(tex,
     perform the processing?}
   \item{file}{The name of a file to read LaTeX code from. If \code{tex}
     is missing, this file is read.}
+  \item{quiet}{Suppress TeX engine output?}
 }
 \details{
   This function takes TeX code as input, creates a TeX document, and 
