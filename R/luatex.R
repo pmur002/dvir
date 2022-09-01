@@ -3,7 +3,7 @@
 ## (this includes font definitions, bop, and pre)
 for (i in 0:255) {
     assign(paste0("lua_font_info_", i),
-           get(paste0("font_info_", i)))
+           base::get(paste0("font_info_", i)))
 }
 
 ## fnt_num_<i>
