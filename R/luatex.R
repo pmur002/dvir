@@ -93,7 +93,7 @@ luaFontInfo <- function(fontname) {
     ## Failure returns NULL
     result <- NULL
     warnings <- NULL
-    fontSearchResult <- system(paste0("luaotfload-tool --find=",
+    fontSearchResult <- system(paste0("luaotfload-tool --fuzzy --find=",
                                       fontname),
                                intern=TRUE)
     if (grepl("found!$", fontSearchResult[1])) {

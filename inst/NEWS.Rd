@@ -2,6 +2,16 @@
 \title{NEWS file for the dvir package}
 \encoding{UTF-8}
 
+\section{Changes in version 0.4-0}{
+  \itemize{
+    \item Add \code{glyph} argument to create
+    \code{glyphGrob()} rather than \code{textGrob()}
+    for each glyph in DVI file.
+
+    \item Fix definition of \code{dvir:::get()} and use of \code{base::get()}.
+  }
+}
+
 \section{Changes in version 0.3-3}{
   \itemize{
     \item Add \code{quiet} argument to \code{typeset()} and

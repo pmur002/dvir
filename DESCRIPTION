@@ -1,7 +1,7 @@
 Package: dvir
 Type: Package
 Title: Render DVI Files
-Version: 0.3-3
+Version: 0.4-0
 Authors@R: c(person("Paul", "Murrell", email = "paul@stat.auckland.ac.nz",
                     role = c("aut", "cre")),
              person("Alexander", "van der Voorn", role = "ctb"))
@@ -12,6 +12,6 @@ Depends: grid
 Suggests: tinytex, gridBezier
 SystemRequirements: A TeX distribution such as TeX Live, fonttools, fontconfig
 Imports: devoid, extrafont, grDevices, hexView (>= 0.3-4), xml2, systemfonts (> 0.1.1)
-Collate: globals.R convert.R device.R ops.R fonts.R enc.R metric.R special.R engine.R luatex.R tikz.R read.R print.R grid.R zzz.R
+Collate: globals.R convert.R device.R ops.R fonts.R glyph.R enc.R metric.R special.R engine.R luatex.R tikz.R read.R print.R grid.R zzz.R
 URL: https://github.com/pmur002/dvir,https://stattech.wordpress.fos.auckland.ac.nz/2018/08/31/2018-08-revisiting-mathematical-equations-in-r-the-dvir-package/,https://stattech.wordpress.fos.auckland.ac.nz/2020/04/16/2020-02-the-agony-and-the-ecstacy-adding-luatex-support-to-dvir/,https://stattech.wordpress.fos.auckland.ac.nz/2020/11/25/2020-05-adding-tikz-support-to-dvir/,https://stattech.wordpress.fos.auckland.ac.nz/2020/12/23/2020-06-letting-go-of-type-1-fonts/
 License: GPL-3
