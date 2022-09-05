@@ -13,6 +13,7 @@ int4 <- atomicBlock("int", size=4, endian="big")
 
 uint1 <- atomicBlock("int", size=1, signed=FALSE)
 uint2 <- atomicBlock("int", size=2, endian="big", signed=FALSE)
+uint4 <- atomicBlock("int", size=4, endian="big", signed=FALSE)
 
 ################################################################################
 ## operation parameters
@@ -154,6 +155,7 @@ op249 <- mixedBlock(q=int4,
                     ## to a multiple of four bytes, but I will ignore
                     ## that for now
                     sig=vectorBlock(ASCIIchar, 4))
+
 
 opparams <- function(marker) {
     opcode <- blockValue(marker)
