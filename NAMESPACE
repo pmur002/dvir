@@ -66,5 +66,9 @@ export("typeset",
        "fontPaths")
 
 S3method("print", "DVI")
+
+S3method("dviGlyphs", "DVI")
+S3method("dviGlyphs", "character")
+
 S3method("dviGrob", "DVI")
 S3method("dviGrob", "character")
