@@ -15,5 +15,4 @@ TeXengine <- function(engine, options="",
 
 latexEngine <- TeXengine("latex")
 
-xetexEngine <- TeXengine("xelatex", "-no-pdf")
 

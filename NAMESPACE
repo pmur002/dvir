@@ -59,7 +59,8 @@ export("typeset",
        "latexEngine",
        "luaEngine",
        "lualatexEngine",
-       ## "xetexEngine",
+       "xeEngine",
+       "xelatexEngine",
        
        "noSpecial", "tikzSpecial",
        

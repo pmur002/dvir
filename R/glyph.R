@@ -1,10 +1,9 @@
 
 ## Build a data frame with a row of information for each glyph
 
-glyph <- function(x, y, char, index, family, weight, style, size) {
-    left <- fromTeX(get("left"))
-    top <- fromTeX(get("top"))
-    data.frame(x=x - left, y=y - top, char, index, family, weight, style, size)
+glyph <- function(x, y, char, index, family, weight, style, size, filename="") {
+    data.frame(x=x, y=y, char, index, family, weight, style, size,
+               filename)
 }
 
 addGlyph <- function(glyph) {
@@ -47,23 +46,9 @@ glyphIndex <- function(raw, fonts, f) {
     }
 }
 
-ttxFontWeight <- function(fontpath) {
-    tmpFontDir <- initFontDir()
-    filename <- basename(fontpath)
-    fontsuffix <- "[.](ttf|otf)$"
-    if (!grepl(fontsuffix, filename))
-        warning("Unrecognised font suffix")
-    filesuffix <- gsub(paste0(".+", fontsuffix), "\\1", filename)
-    filestub <- gsub(fontsuffix, "", filename)
-    fontfile <- file.path(tmpFontDir, filename)
-    if (!file.exists(fontfile)) {
-        file.copy(fontpath, tmpFontDir)
-    }
-    ttxfile <- file.path(tmpFontDir, paste0(filestub, "-OS2.ttx"))
-    if (!file.exists(ttxfile)) {
-        system(paste0("ttx -t OS/2 -o ", ttxfile, " ", fontfile))
-    }
-    OS2 <- getTTX(ttxfile)
+fontWeight <- function(fonts, f) {
+    font <- getFontFile(fonts[[f]]$file)
+    OS2 <- getOS2(font$file, font$suffix)
     weight <- xml_text(xml_find_first(OS2, "//usWeightClass/@value"))
     if (is.na(weight))
         400
@@ -71,28 +56,9 @@ ttxFontWeight <- function(fontpath) {
         as.numeric(weight)
 }
 
-fontWeight <- function(fonts, f) {
-    font <- fonts[[f]]
-    ttxFontWeight(font$file)
-}
-
-ttxFontStyle <- function(fontpath) {
-    tmpFontDir <- initFontDir()
-    filename <- basename(fontpath)
-    fontsuffix <- "[.](ttf|otf)$"
-    if (!grepl(fontsuffix, filename))
-        warning("Unrecognised font suffix")
-    filesuffix <- gsub(paste0(".+", fontsuffix), "\\1", filename)
-    filestub <- gsub(fontsuffix, "", filename)
-    fontfile <- file.path(tmpFontDir, filename)
-    if (!file.exists(fontfile)) {
-        file.copy(fontpath, tmpFontDir)
-    }
-    ttxfile <- file.path(tmpFontDir, paste0(filestub, "-hhea.ttx"))
-    if (!file.exists(ttxfile)) {
-        system(paste0("ttx -t hhea -o ", ttxfile, " ", fontfile))
-    }
-    hhea <- getTTX(ttxfile)
+fontStyle <- function(fonts, f) {
+    font <- getFontFile(fonts[[f]]$file)
+    hhea <- getHHea(font$file, font$suffix)
     slopeRun <- xml_text(xml_find_first(hhea, "//caretSlopeRun/@value"))
     if (is.na(slopeRun) || slopeRun == "0")
         "normal"
@@ -100,18 +66,15 @@ ttxFontStyle <- function(fontpath) {
         "italic"
 }
 
-fontStyle <- function(fonts, f) {
-    font <- fonts[[f]]
-    ttxFontStyle(font$file)
-}
-
 ## set_char_<i>
 ## Similar to op_set_char(), but do not generate a grob
 glyph_set_char <- function(op) {
-    x <- fromTeX(get("h"))
-    y <- fromTeX(get("v"))
+    x <- fromTeX(get("h") - get("left"))
+    y <- fromTeX(get("v") - get("top"))
     fonts <- get("fonts")
     f <- get("f")
+    if (fonts[[f]]$TeXfont)
+        stop("Glyph support not available for TeX/Type1 fonts")
     device <- get("device")
     engine <- get("engine")
     char <- engine$charEnc(op$blocks$op.opcode$fileRaw,
@@ -136,10 +99,12 @@ for (i in 0:127) {
 ## set_char_<i>
 ## Similar to op_set(), but do not generate a grob
 glyph_set <- function(op) {
-    x <- fromTeX(get("h"))
-    y <- fromTeX(get("v"))
+    x <- fromTeX(get("h") - get("left"))
+    y <- fromTeX(get("v") - get("top"))
     fonts <- get("fonts")
     f <- get("f")
+    if (fonts[[f]]$TeXfont)
+        stop("Glyph support not available for TeX/Type1 fonts")
     device <- get("device")
     engine <- get("engine")
     char <- engine$charEnc(op$blocks$op.opparams$fileRaw,
@@ -251,7 +216,6 @@ op2glyph <- function(op) {
 dvi2glyphs <- function(dvi, device, engine) {
     set("device", device)
     set("engine", engine)
-    set("scale", 1)
 
     set("glyphs", vector("list", length(dvi)))
     set("glyphNum", 1)
@@ -275,6 +239,7 @@ dviGlyphs.DVI <- function(dvi,
                           initFonts=getOption("dvir.initFonts"),
                           ...) {
     set("initFonts", initFonts)
+    set("scale", 1)
     fonts <- dviFonts(dvi, device, engine)
     metrics <- dviMetric(dvi, device, engine)
     dvi2glyphs(dvi, device, engine)

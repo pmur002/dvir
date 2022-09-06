@@ -347,7 +347,7 @@ cmapName <- function(code, fontfile, suffix) {
 ## Glyph name from raw bytes
 getGlyphName <- function(raw, device, fontfile, filesuffix) {
     if (psDevice(device) || pdfDevice(device)) {
-        stop("Sorry, no support for non-CM fonts outside Cairo devices (for now)")
+        stop("Sorry, no support for non-CM fonts outside Cairo devices")
     } else if (cairoDevice(device)) {
         nbytes <- length(raw)
         code <- switch(nbytes,
@@ -377,8 +377,8 @@ getGlyphName <- function(raw, device, fontfile, filesuffix) {
                          cmapName(code, fontfile, filesuffix)),
                        ## Find non-UNICODE glyph name
                        if (as.numeric(raw[1]) >= 15) {
-                           getGlyph(getGlyphs(fontfile, filesuffix), 
-                                    as.numeric(as.hexmode(code)))$name
+                           getNonUnicodeGlyph(getGlyphs(fontfile, filesuffix), 
+                                              as.numeric(as.hexmode(code)))$name
                        } else {
                            c(AdobeName(code),
                              paste0("uni", code),
@@ -392,48 +392,19 @@ getGlyphName <- function(raw, device, fontfile, filesuffix) {
     name
 }
 
-widthFromGlyphName <- function(name, hmtx) {
-    metric <- NULL
-    ## Try more than one name (if there are multiple options)
-    while (!length(metric) && length(name)) {
-        metric <- xml_find_first(hmtx, paste0("//mtx[@name = '",
-                                              name[1],
-                                              "']/@width"))
-        name <- name[-1]
-    }
-    as.numeric(xml_text(metric))
-}
-
 ## Calculate character width from TTX font metrics
 ttxCharWidth <- function(raw, fontpath, device, fontsize=10, cex=1) {
-    tmpFontDir <- initFontDir()
-    filename <- basename(fontpath)
-    fontsuffix <- "[.](ttf|otf)$"
-    if (!grepl(fontsuffix, filename))
-        warning("Unrecognised font suffix")
-    filesuffix <- gsub(paste0(".+", fontsuffix), "\\1", filename)
-    filestub <- gsub(fontsuffix, "", filename)
-    fontfile <- file.path(tmpFontDir, filename)
-    if (!file.exists(fontfile)) {
-        file.copy(fontpath, tmpFontDir)
-    }
+    font <- getFontFile(fontpath)
+    fontfile <- font$file
+    filesuffix <- font$suffix
     ## Get font metric "scale"
-    headTTXfile <- file.path(tmpFontDir, paste0(filestub, "-head.ttx"))
-    if (!file.exists(headTTXfile)) {
-        system(paste0("ttx -t head -o ", headTTXfile, " ", fontfile))
-    }
-    headTTX <- getTTX(headTTXfile)
+    headTTX <- getHead(fontfile, filesuffix)
     unitsPerEm <- as.numeric(xml_text(xml_find_first(headTTX,
                                                      "//unitsPerEm/@value")))
     ## Convert char num to glyph name
     glyphName <- getGlyphName(raw, device, fontfile, filesuffix)
     ## Find glyph width
-    hmtxTTXfile <- file.path(tmpFontDir, paste0(filestub, "-hmtx.ttx"))
-    if (!file.exists(hmtxTTXfile)) {
-        system(paste0("ttx -t hmtx -o ", hmtxTTXfile, " ", fontfile))
-    }
-    hmtxTTX <- getTTX(hmtxTTXfile)
-    width <- widthFromGlyphName(glyphName, hmtxTTX)
+    width <- widthFromGlyphName(glyphName, fontfile, filesuffix)
     ## round() to get whole number metrix (at 1000 scale)
     ## floor() to match what PDF_StrWidthUTF8() does
     widthPts <- floor(fontsize + .5)*cex*(round(width/(unitsPerEm/1000)))/1000
@@ -470,16 +441,8 @@ getFont <- function(originalfontfile, charIndex) {
          subfile=subfontfile)
 }
 
-getGlyphs <- function(fontfile, suffix) {
-    ttxfile <- gsub(paste0("[.]", suffix, "$"), "-GlyphOrder.ttx", fontfile)
-    if (!file.exists(ttxfile)) {
-        system(paste0("ttx -t GlyphOrder -o ", ttxfile, " ", fontfile))
-    }
-    getTTX(ttxfile)
-}
-
 ## Get glyph number of ith non-UNICODE glyph from TTX
-getGlyph <- function(glyphs, index) {
+getNonUnicodeGlyph <- function(glyphs, index) {
     all <- xml_text(xml_find_all(glyphs, "//GlyphID/@name"))
     notUNICODE <- grep("^glyph", all)
     ## The first '- 1' is for zero-based glyph numbering
@@ -631,7 +594,7 @@ subsetFont <- function(fontfile, charIndex) {
     if (is.null(cachedFont)) {
         fontInfo <- getFont(fontfile, charIndex)
         glyphs <- getGlyphs(fontInfo$file, fontInfo$suffix)
-        glyphInfo <- getGlyph(glyphs, charIndex)
+        glyphInfo <- getNonUnicodeGlyph(glyphs, charIndex)
         extractGlyph(fontInfo$file, glyphInfo$index, fontInfo$subfile)
         ttxfile <- unwrapFont(fontInfo$subfile, fontInfo$suffix)
         subsetName <- dvirFontName()
@@ -686,32 +649,6 @@ getFontFile <- function(fontname) {
     }
     fontfile
 }
-
-#########################
-## TTX cache (to avoid loading TTX files over and over again)
-
-initTTXcache <- function() {
-    set("ttxCache", list())
-}
-
-cacheTTX <- function(ttxFile, ttx) {
-    cache <- get("ttxCache")
-    cache[[ttxFile]] <- ttx
-    set("ttxCache", cache)
-}
-
-getTTX <- function(ttxFile) {
-    cache <- get("ttxCache")
-    if (is.null(cache) ||
-        is.null(cache[[ttxFile]])) {
-        ttx <- read_xml(ttxFile)
-        cacheTTX(ttxFile, ttx)        
-    } else {
-        ttx <- cache[[ttxFile]]
-    }
-    ttx
-}
-
 
 initLua <- function() {
     versText <- system("luatex --version", intern=TRUE)[1]

@@ -295,6 +295,8 @@ defineFont <- function(fontname, device) {
         ## Other devices 
         stop("Graphics device unsupported")
     }
+    ## We assume that all fonts are TeX fonts (in this function)
+    defn$TeXfont <- TRUE
     defn
 }
 
