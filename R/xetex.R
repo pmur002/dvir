@@ -296,7 +296,7 @@ xeEngine <- function(engine="xelatex",
 xelatexEngine <- xeEngine()
 
 xePreamble <- function(font="Latin Modern Roman") {
-    c("\\documentclass[12pt]{standalone}",
+    c("\\documentclass{standalone}",
       "\\usepackage{fontspec}",
       "\\usepackage{unicode-math}",
       paste0("\\setmainfont{", font, "}"),
