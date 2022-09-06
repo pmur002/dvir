@@ -272,13 +272,46 @@ glyph_op_253 <- function(op) {
 glyph_op_254 <- glyph_op_253
 
 ################################################################################
+## grobs
+
+op_no_support <- function(op) {
+    warning("No support for converting XeTeX XDV to grobs")
+}
+
+grid_op_252 <- op_no_support
+
+grid_op_253 <- op_no_support
+
+grid_op_254 <- op_no_support
+
+################################################################################
 ## engine
 
 xeEngine <- function(engine="xelatex",
                      options="--no-pdf",
                      special=noSpecial) {
-    TeXengine(engine, options, special=special)
+    TeXengine(engine, options, special=special, dviSuffix=".xdv")
 }
 
 xelatexEngine <- xeEngine()
 
+xePreamble <- function(font="Latin Modern Roman") {
+    c("\\documentclass[12pt]{standalone}",
+      "\\usepackage{fontspec}",
+      "\\usepackage{unicode-math}",
+      paste0("\\setmainfont{", font, "}"),
+      "\\begin{document}")
+}
+
+xelatexGrob <- function(tex, ...,
+                        preamble=xePreamble(),
+                        postamble=getOption("dvir.postamble"),
+                        engine=xelatexEngine) {
+    latexGrob(tex, ..., 
+              preamble=preamble, postamble=postamble, engine=engine,
+              glyphs=TRUE)
+}
+
+grid.xelatex <- function(...) {
+    grid.draw(xelatexGrob(...))
+}

@@ -46,9 +46,11 @@ export("typeset",
        "readDVI",
 
        "grid.dvi", "dviGrob",
+       "dviGlyph",
 
        "grid.latex", "latexGrob",
        "grid.lualatex", "lualatexGrob",
+       "grid.xelatex", "xelatexGrob",
        "grid.tikz", "tikzGrob",
        "grid.tikzpicture", "tikzpictureGrob",
 
@@ -68,8 +70,8 @@ export("typeset",
 
 S3method("print", "DVI")
 
-S3method("dviGlyphs", "DVI")
-S3method("dviGlyphs", "character")
+S3method("dviGlyph", "DVI")
+S3method("dviGlyph", "character")
 
 S3method("dviGrob", "DVI")
 S3method("dviGrob", "character")

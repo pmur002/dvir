@@ -269,7 +269,7 @@ typeset <- function(tex,
         tex <- readLines(file)
     }
     texFile <- tempfile(fileext=".tex")
-    dviFile <- gsub("[.]tex", ".dvi", texFile)
+    dviFile <- gsub("[.]tex", engine$dviSuffix, texFile)
     writeLines(c(preamble,
                  tex,
                  postamble),
@@ -297,7 +297,8 @@ latexGrob <- function(tex,
                       tinytex=FALSE,
                       file=NULL,
                       initFonts=getOption("dvir.initFonts"),
-                      quiet=TRUE) {
+                      quiet=TRUE,
+                      glyphs=FALSE) {
     if (missing(tex)) {
         if (is.null(file))
             stop("Must specify one of 'tex' or 'file'")
@@ -306,8 +307,12 @@ latexGrob <- function(tex,
     dviFile <- typeset(tex, preamble, postamble, engine, tinytex,
                        quiet=quiet)
     dvi <- readDVI(dviFile)
-    dviGrob(dvi, x, y, default.units, just, rot, device,
-            name, engine, initFonts)
+    if (glyphs) {
+        dviGlyph(dvi, x, y, default.units, device, engine, initFonts)
+    } else {
+        dviGrob(dvi, x, y, default.units, just, rot, device,
+                name, engine, initFonts)
+    }
 }
     
 grid.latex <- function(...) {

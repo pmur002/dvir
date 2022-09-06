@@ -220,27 +220,53 @@ dvi2glyphs <- function(dvi, device, engine) {
     set("glyphs", vector("list", length(dvi)))
     set("glyphNum", 1)
     invisible(lapply(dvi, op2glyph))
-    do.call(rbind, get("glyphs"))
+    glyphs <- do.call(rbind, get("glyphs"))
+    fonts <- mapply(font,
+                    glyphs$family,
+                    glyphs$weight,
+                    glyphs$style,
+                    glyphs$size,
+                    glyphs$filename,
+                    SIMPLIFY=FALSE)
+    glyphInfo(glyphs$char,
+              fonts,
+              glyphs$index,
+              convertX(unit(glyphs$x, "mm"), "pt", valueOnly=TRUE),
+              convertY(unit(glyphs$y, "mm"), "pt", valueOnly=TRUE))
+
 }
+
 
 ################################################################################
 ## User interface
-dviGlyphs <- function(dvi, ...) {
-    UseMethod("dviGlyphs")
+dviGlyph <- function(dvi, ...) {
+    UseMethod("dviGlyph")
 }
 
-dviGlyphs.character <- function(dvi, ...) {
-    dviGlyphs(readDVI(dvi), ...)
+dviGlyph.character <- function(dvi, ...) {
+    dviGlyph(readDVI(dvi), ...)
 }
 
-dviGlyphs.DVI <- function(dvi, 
-                          device=names(dev.cur()),
-                          engine=latexEngine,
-                          initFonts=getOption("dvir.initFonts"),
-                          ...) {
+dviGlyph.DVI <- function(dvi,
+                         x=.5, y=.5, default.units="npc",
+                         device=names(dev.cur()),
+                         engine=latexEngine,
+                         initFonts=getOption("dvir.initFonts"),
+                         ...) {
     set("initFonts", initFonts)
     set("scale", 1)
+    
+    if (!is.unit(x))
+        x <- unit(x, default.units)
+    if (!is.unit(y))
+        y <- unit(y, default.units)
+    if (device == "null device") {
+        dev.new()
+        device <- names(dev.cur())
+    }
     fonts <- dviFonts(dvi, device, engine)
     metrics <- dviMetric(dvi, device, engine)
-    dvi2glyphs(dvi, device, engine)
+    
+    glyphGrob(dvi2glyphs(dvi, device, engine))
 }
+
