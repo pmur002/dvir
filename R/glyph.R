@@ -231,8 +231,8 @@ dvi2glyphs <- function(dvi, device, engine) {
     glyphInfo(glyphs$char,
               fonts,
               glyphs$index,
-              convertX(unit(glyphs$x, "mm"), "pt", valueOnly=TRUE),
-              convertY(unit(glyphs$y, "mm"), "pt", valueOnly=TRUE))
+              convertX(unit(glyphs$x, "mm"), "bigpts", valueOnly=TRUE),
+              convertY(unit(glyphs$y, "mm"), "bigpts", valueOnly=TRUE))
 
 }
 
