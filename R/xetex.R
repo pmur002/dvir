@@ -256,15 +256,15 @@ glyph_op_253 <- function(op) {
     weight <- fontWeight(fonts, f)
     style <- fontStyle(fonts, f)
     family <- ttxFontFamily(fonts, f)
-    mapply(function(x, y, index, filename) {
+    mapply(function(x, y, index, filename, fontindex) {
                addGlyph(glyph(x, y,
                               "", index,
                               family=family, weight=weight, style=style,
-                              size=fonts[[f]]$size, filename))
+                              size=fonts[[f]]$size, filename, fontindex))
            },
            fromTeX(x + glyphX - get("left")),
            fromTeX(y + glyphY - get("top")),
-           id, fonts[[f]]$file)
+           id, fonts[[f]]$file, fonts[[f]]$index)
     widths <- unlist(lapply(id, xeCharWidth, fonts, f))
     set("h", get("h") + sum(widths))
 }

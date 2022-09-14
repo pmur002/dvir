@@ -1,9 +1,10 @@
 
 ## Build a data frame with a row of information for each glyph
 
-glyph <- function(x, y, char, index, family, weight, style, size, filename="") {
-    data.frame(x=x, y=y, char, index, family, weight, style, size,
-               filename)
+glyph <- function(x, y, char, index, family, weight, style, size,
+                  filename="", fontindex=0) {
+    data.frame(x, y, char, index, family, weight, style, size,
+               filename, fontindex)
 }
 
 addGlyph <- function(glyph) {
@@ -225,8 +226,9 @@ dvi2glyphs <- function(dvi, device, engine) {
                     glyphs$family,
                     glyphs$weight,
                     glyphs$style,
-                    glyphs$size,
                     glyphs$filename,
+                    glyphs$fontindex,
+                    glyphs$size,
                     SIMPLIFY=FALSE)
     glyphInfo(glyphs$char,
               fonts,
