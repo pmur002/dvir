@@ -214,7 +214,7 @@ op2glyph <- function(op) {
     base::get(paste0("glyph_op_", opcode))(op)
 }
 
-dvi2glyphs <- function(dvi, device, engine) {
+dvi2glyphs <- function(dvi, metrics, device, engine) {
     set("device", device)
     set("engine", engine)
 
@@ -230,12 +230,25 @@ dvi2glyphs <- function(dvi, device, engine) {
                     glyphs$fontindex,
                     glyphs$size,
                     SIMPLIFY=FALSE)
-    glyphInfo(glyphs$char,
-              fonts,
-              glyphs$index,
+    width <- abs(metrics$right - metrics$left)
+    height <- abs(metrics$top - metrics$bottom)
+    glyphInfo(glyphs$index,
               convertX(unit(glyphs$x, "mm"), "bigpts", valueOnly=TRUE),
-              convertY(unit(glyphs$y, "mm"), "bigpts", valueOnly=TRUE))
-
+              convertY(unit(height - glyphs$y, "mm"), "bigpts", valueOnly=TRUE),
+              fonts,
+              convertWidth(unit(width, "mm"),
+                           "bigpts", valueOnly=TRUE),
+              convertHeight(unit(height, "mm"),
+                            "bigpts", valueOnly=TRUE),
+              c(left=0,
+                right=convertX(unit(width, "mm"),
+                               "bigpts", valueOnly=TRUE)),
+              c(bottom=0,
+                top=convertHeight(unit(height, "mm"),
+                                  "bigpts", valueOnly=TRUE),
+                baseline=convertHeight(unit(abs(metrics$bottom -
+                                                metrics$baseline),
+                                            "mm"), "bigpts", valueOnly=TRUE)))
 }
 
 
@@ -269,6 +282,6 @@ dviGlyph.DVI <- function(dvi,
     fonts <- dviFonts(dvi, device, engine)
     metrics <- dviMetric(dvi, device, engine)
     
-    glyphGrob(dvi2glyphs(dvi, device, engine))
+    dvi2glyphs(dvi, metrics, device, engine)
 }
 
