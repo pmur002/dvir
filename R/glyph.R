@@ -224,6 +224,8 @@ dvi2glyphs <- function(dvi, metrics, device, engine) {
     glyphs <- do.call(rbind, get("glyphs"))
     width <- abs(metrics$right - metrics$left)
     height <- abs(metrics$top - metrics$bottom)
+    right <- convertX(unit(width, "mm"), "bigpts", valueOnly=TRUE)
+    top <- convertHeight(unit(height, "mm"), "bigpts", valueOnly=TRUE)
     glyphInfo(glyphs$index,
               convertX(unit(glyphs$x, "mm"), "bigpts", valueOnly=TRUE),
               convertY(unit(height - glyphs$y, "mm"), "bigpts", valueOnly=TRUE),
@@ -237,12 +239,9 @@ dvi2glyphs <- function(dvi, metrics, device, engine) {
                            "bigpts", valueOnly=TRUE),
               convertHeight(unit(height, "mm"),
                             "bigpts", valueOnly=TRUE),
-              c(left=0,
-                right=convertX(unit(width, "mm"),
-                               "bigpts", valueOnly=TRUE)),
-              c(bottom=0,
-                top=convertHeight(unit(height, "mm"),
-                                  "bigpts", valueOnly=TRUE),
+              c(left=0, right=right, centre=right/2),
+              
+              c(bottom=0, top=top, centre=top/2,
                 baseline=convertHeight(unit(abs(metrics$bottom -
                                                 metrics$baseline),
                                             "mm"), "bigpts", valueOnly=TRUE)))
