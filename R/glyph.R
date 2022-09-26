@@ -222,20 +222,17 @@ dvi2glyphs <- function(dvi, metrics, device, engine) {
     set("glyphNum", 1)
     invisible(lapply(dvi, op2glyph))
     glyphs <- do.call(rbind, get("glyphs"))
-    fonts <- mapply(font,
-                    glyphs$family,
-                    glyphs$weight,
-                    glyphs$style,
-                    glyphs$filename,
-                    glyphs$fontindex,
-                    glyphs$size,
-                    SIMPLIFY=FALSE)
     width <- abs(metrics$right - metrics$left)
     height <- abs(metrics$top - metrics$bottom)
     glyphInfo(glyphs$index,
               convertX(unit(glyphs$x, "mm"), "bigpts", valueOnly=TRUE),
               convertY(unit(height - glyphs$y, "mm"), "bigpts", valueOnly=TRUE),
-              fonts,
+              glyphs$family,
+              glyphs$weight,
+              glyphs$style,
+              glyphs$filename,
+              glyphs$fontindex,
+              glyphs$size,
               convertWidth(unit(width, "mm"),
                            "bigpts", valueOnly=TRUE),
               convertHeight(unit(height, "mm"),
