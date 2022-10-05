@@ -38,10 +38,6 @@ metric_set_char <- function(op) {
     ## REMEMBER that v measures DOWN
     ## ALSO, v is a baseline for text
     v <- get("v")
-    baseline <- get("baseline")
-    if (!is.finite(baseline) || v > baseline) {
-        set("baseline", v)
-    }
     a <- ytoTeX(grobAscent(tg))
     d <- ytoTeX(grobDescent(tg))
     top <- get("top")
@@ -67,10 +63,6 @@ metric_set <- function(op) {
     ## REMEMBER that v measures DOWN
     ## ALSO, v is a baseline for text
     v <- get("v")
-    baseline <- get("baseline")
-    if (!is.finite(baseline) || v > baseline) {
-        set("baseline", v)
-    }
     a <- ytoTeX(grobAscent(tg))
     d <- ytoTeX(grobDescent(tg))
     top <- get("top")

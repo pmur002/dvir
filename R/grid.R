@@ -297,8 +297,7 @@ latexGrob <- function(tex,
                       tinytex=FALSE,
                       file=NULL,
                       initFonts=getOption("dvir.initFonts"),
-                      quiet=TRUE,
-                      glyphs=FALSE) {
+                      quiet=TRUE) {
     if (missing(tex)) {
         if (is.null(file))
             stop("Must specify one of 'tex' or 'file'")
@@ -307,12 +306,8 @@ latexGrob <- function(tex,
     dviFile <- typeset(tex, preamble, postamble, engine, tinytex,
                        quiet=quiet)
     dvi <- readDVI(dviFile)
-    if (glyphs) {
-        dviGlyph(dvi, x, y, default.units, device, engine, initFonts)
-    } else {
-        dviGrob(dvi, x, y, default.units, just, rot, device,
-                name, engine, initFonts)
-    }
+    dviGrob(dvi, x, y, default.units, just, rot, device,
+            name, engine, initFonts)
 }
     
 grid.latex <- function(...) {

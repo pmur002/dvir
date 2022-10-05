@@ -667,24 +667,37 @@ luaEngine <- function(engine="lualatex",
                       fontDef=luaDefineFont,
                       charEnc=luaGetChar,
                       charMetric=luaCharWidth,
-                      special=noSpecial) {
+                      special=previewSpecial) {
     TeXengine(engine, options, readFonts, fontDef, charEnc, charMetric, special)
 }
 
 lualatexEngine <- luaEngine()
 
-luaPreamble <- function(font="Times") {
-    c("\\RequirePackage{luatex85} % For more recent versions of LuaTeX",
-      "\\documentclass[12pt]{standalone}",
-      "\\usepackage{fontspec}",
-      paste0("\\setmainfont[Mapping=text-tex]{", font, "}"),
-      "\\begin{document}",
-      "\\selectfont")
+luaPreamble <- function(font="Latin Modern Roman", preview=TRUE) {
+    common <-
+        c("\\RequirePackage{luatex85} % For more recent versions of LuaTeX",
+          "\\documentclass[12pt]{standalone}",
+          "\\usepackage{fontspec}",
+          paste0("\\setmainfont{", font, "}"))
+    if (preview) {
+        c(common, previewPreamble)
+    } else {
+        c(common,
+          "\\begin{document}")
+    }
+}
+
+luaPostamble <- function(preview=TRUE) {
+    if (preview) {
+        previewPostamble
+    } else {
+        "\\end{document}"
+    }
 }
 
 lualatexGrob <- function(tex, ...,
                          preamble=luaPreamble(),
-                         postamble=getOption("dvir.postamble"),
+                         postamble=luaPostamble(),
                          engine=lualatexEngine) {
     latexGrob(tex, ..., 
               preamble=preamble, postamble=postamble, engine=engine)

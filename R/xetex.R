@@ -220,9 +220,9 @@ metric_info_253 <- function(op) {
     
     id <- blockValue(op$blocks$op.opparams.glyphs.id)
     widths <- unlist(lapply(id, xeCharWidth, fonts, f))
-    updateHoriz(min(glyphX))
-    updateHoriz(max(glyphX + widths))
+    ## Move to end of glyphs and check position again
     set("h", get("h") + sum(widths))
+    updateHoriz(get("h"))
 }
 
 metric_info_254 <- metric_info_253
@@ -289,27 +289,40 @@ grid_op_254 <- op_no_support
 
 xeEngine <- function(engine="xelatex",
                      options="--no-pdf",
-                     special=noSpecial) {
+                     special=previewSpecial) {
     TeXengine(engine, options, special=special, dviSuffix=".xdv")
 }
 
 xelatexEngine <- xeEngine()
 
-xePreamble <- function(font="Latin Modern Roman") {
-    c("\\documentclass{standalone}",
-      "\\usepackage{fontspec}",
-      "\\usepackage{unicode-math}",
-      paste0("\\setmainfont{", font, "}"),
-      "\\begin{document}")
+xePreamble <- function(font="Latin Modern Roman", preview=TRUE) {
+    common <- c("\\documentclass{standalone}",
+                "\\usepackage{fontspec}",
+                "\\usepackage{unicode-math}",
+                paste0("\\setmainfont{", font, "}"))
+    if (preview) {
+        c(common,
+          previewPreamble)
+    } else {
+        c(common,
+          "\\begin{document}")
+    }
+}
+
+xePostamble <- function(preview=TRUE) {
+    if (preview) {
+        previewPostamble
+    } else {
+        "\\end{document}"
+    }
 }
 
 xelatexGrob <- function(tex, ...,
                         preamble=xePreamble(),
-                        postamble=getOption("dvir.postamble"),
+                        postamble=xePostamble(),
                         engine=xelatexEngine) {
     latexGrob(tex, ..., 
-              preamble=preamble, postamble=postamble, engine=engine,
-              glyphs=TRUE)
+              preamble=preamble, postamble=postamble, engine=engine)
 }
 
 grid.xelatex <- function(...) {

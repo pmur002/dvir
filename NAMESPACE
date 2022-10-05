@@ -46,16 +46,18 @@ export("typeset",
        "readDVI",
 
        "grid.dvi", "dviGrob",
-       "dviGlyph",
 
        "grid.latex", "latexGrob",
        "grid.lualatex", "lualatexGrob",
        "grid.xelatex", "xelatexGrob",
        "grid.tikz", "tikzGrob",
        "grid.tikzpicture", "tikzpictureGrob",
+       "grid.typeset", "typesetGrob",
+       "grid.latexTypeset", "grid.lualatexTypeset", "grid.xelatexTypeset",
 
-       "luaPreamble",
+       "luaPreamble", "luaPostamble",
        "tikzPreamble", "tikzpicturePreamble", "tikzpicturePostamble",
+       "xePreamble", "xePostamble",
 
        "TeXengine", 
        "latexEngine",
@@ -69,9 +71,6 @@ export("typeset",
        "fontPaths")
 
 S3method("print", "DVI")
-
-S3method("dviGlyph", "DVI")
-S3method("dviGlyph", "character")
 
 S3method("dviGrob", "DVI")
 S3method("dviGrob", "character")
