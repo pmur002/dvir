@@ -125,9 +125,9 @@ print_op_151 <- function(op) {
 
 ## x<i>
 printX <- function(op, i) {
-    b <- blockValue(op$blocks$op.opparams)
     str <- paste0("x", i)
     if (i > 0) {
+        b <- blockValue(op$blocks$op.opparams)
         str <- paste0(str, "           ",
                       "b=", b)
     }

@@ -4,11 +4,18 @@
 
 \section{Changes in version 0.4-0}{
   \itemize{
-    \item Add \code{glyph} argument to create
-    \code{glyphGrob()} rather than \code{textGrob()}
-    for each glyph in DVI file.
+    \item New grid.typeset() function.
 
-    \item Fix definition of \code{dvir:::get()} and use of \code{base::get()}.
+    \item (limited) XeTeX support.
+
+    \item Support for baseline calculation, via \code{preview} pacakge.
+
+    \item Support for colours via \code{xcolor} package?
+    
+    \item Fix definition of \code{dvir:::get()} and use of
+    \code{base::get()}.
+
+    \item Fix printing of \code{x0} operation in DVI file.
   }
 }
 
