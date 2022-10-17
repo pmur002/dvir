@@ -469,7 +469,7 @@ drawSpecial <- function(x) {
     }
 }
 
-gridSpecial <- function(op) {
+grobSpecial <- function(op) {
     specialString <- paste(blockValue(op$blocks$op.opparams.string),
                                 collapse="")
     ## Ignore any other specials
@@ -509,7 +509,7 @@ gridSpecial <- function(op) {
 
 tikzSpecial <- specialHandler(init=specialInit,
                               metric=specialMetric,
-                              grid=gridSpecial)
+                              grob=grobSpecial)
 
 ################################################################################
 ## User interface

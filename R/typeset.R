@@ -15,6 +15,7 @@ typesetsetchar <- function(op) {
         stop("Glyph support not available for TeX/Type1 fonts")
     device <- get("device")
     engine <- get("engine")
+    colour <- get("colour")
     char <- engine$charEnc(op$blocks$op.opcode$fileRaw,
                            fonts[[f]]$postscriptname,
                            device)
@@ -25,7 +26,7 @@ typesetsetchar <- function(op) {
     weight <- fontWeight(fonts, f)
     style <- fontStyle(fonts, f)
     addGlyph(glyph(x, y, char, index, family, weight, style,
-                   fonts[[f]]$size, fonts[[f]]$file))
+                   fonts[[f]]$size, fonts[[f]]$file, colour[1]))
     
     set("h",
         get("h") + engine$charMetric(op$blocks$op.opcode$fileRaw, fonts, f))    
@@ -47,6 +48,7 @@ typesetset <- function(op) {
         stop("Glyph support not available for TeX/Type1 fonts")
     device <- get("device")
     engine <- get("engine")
+    colour <- get("colour")
     char <- engine$charEnc(op$blocks$op.opparams$fileRaw,
                            fonts[[f]]$postscriptname,
                            device)
@@ -57,7 +59,7 @@ typesetset <- function(op) {
     weight <- fontWeight(fonts, f)
     style <- fontStyle(fonts, f)
     addGlyph(glyph(x, y, char, index, family, weight, style,
-                   fonts[[f]]$size, fonts[[f]]$file))
+                   fonts[[f]]$size, fonts[[f]]$file, colour[1]))
     
     set("h",
         get("h") + engine$charMetric(op$blocks$op.opparams$fileRaw, fonts, f))
@@ -132,10 +134,15 @@ for (i in 171:234) {
 }
 
 ## xxx<i> (specials)
-typeset_op_239 <- op_ignore
-typeset_op_240 <- op_ignore
-typeset_op_241 <- op_ignore
-typeset_op_242 <- op_ignore
+typesetSpecial <- function(op) {
+    engine <- get("engine")
+    engine$special$grob(op)
+}
+
+typeset_op_239 <- typesetSpecial
+typeset_op_240 <- typesetSpecial
+typeset_op_241 <- typesetSpecial
+typeset_op_242 <- typesetSpecial
 
 ## font_def<i>
 typeset_op_243 <- op_ignore
@@ -160,7 +167,7 @@ dvitypeset <- function(dvi, metrics, device, engine) {
 
     set("glyphs", vector("list", length(dvi)))
     set("glyphNum", 1)
-    invisible(lapply(dvi, op2glyph))
+    invisible(lapply(dvi, op2typeset))
     glyphs <- do.call(rbind, get("glyphs"))
     width <- abs(metrics$right - metrics$left)
     height <- abs(metrics$top - metrics$bottom)
@@ -190,7 +197,8 @@ dvitypeset <- function(dvi, metrics, device, engine) {
                                         "bigpts", valueOnly=TRUE)),
               hAnchor=glyphAnchor(c(0, right, right/2),
                                   label=c("left", "right", "centre")),
-              vAnchor=vAnchor)
+              vAnchor=vAnchor,
+              glyphs$colour)
 }
 
 dviTypeset <- function(dvi,

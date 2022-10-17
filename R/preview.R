@@ -5,7 +5,7 @@
 ## NOTE that this setting of "baseline" should be orthogonal to
 ## setting of "baseline" from metric.R as long as the TeX being
 ## processed does NOT use a TeX/Type1 font.
-## (therwise the "baseline" setting from metric.R will win.)
+## (otherwise the "baseline" setting from metric.R will win.)
 previewInit <- function(op) {
     set("baseline", NA)
 }
@@ -22,7 +22,7 @@ previewMetric <- function(op) {
 
 previewSpecial <- specialHandler(init=previewInit,
                                  metric=previewMetric,
-                                 grid=ignoreSpecial)
+                                 grob=ignoreSpecial)
 
 ################################################################################
 ## Preambles
@@ -42,11 +42,9 @@ previewPreamble <-
       "\\box\\pr@box%",
       "}%",
       "}",
-      "\\makeatother",
-      "\\begin{document}",
-      "\\begin{preview}")
+      "\\makeatother")
 
-previewPostamble <-
-    c("\\end{preview}",
-      "\\end{document}")
+previewStart <- "\\begin{preview}"
+
+previewEnd <- "\\end{preview}"
 

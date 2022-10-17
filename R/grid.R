@@ -140,7 +140,7 @@ for (i in 171:234) {
 ## xxx<i> (specials)
 gridSpecial <- function(op) {
     engine <- get("engine")
-    engine$special$grid(op)
+    engine$special$grob(op)
 }
 
 grid_op_239 <- gridSpecial

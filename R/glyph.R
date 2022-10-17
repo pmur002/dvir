@@ -2,9 +2,9 @@
 ## Build a data frame with a row of information for each glyph
 
 glyph <- function(x, y, char, index, family, weight, style, size,
-                  filename="", fontindex=0) {
+                  filename="", fontindex=0, colour=NA) {
     data.frame(x, y, char, index, family, weight, style, size,
-               filename, fontindex)
+               filename, fontindex, colour)
 }
 
 addGlyph <- function(glyph) {
@@ -78,6 +78,7 @@ glyph_set_char <- function(op) {
         stop("Glyph support not available for TeX/Type1 fonts")
     device <- get("device")
     engine <- get("engine")
+    colour <- get("colour")
     char <- engine$charEnc(op$blocks$op.opcode$fileRaw,
                            fonts[[f]]$postscriptname,
                            device)
@@ -88,7 +89,7 @@ glyph_set_char <- function(op) {
     weight <- fontWeight(fonts, f)
     style <- fontStyle(fonts, f)
     addGlyph(glyph(x, y, char, index, family, weight, style,
-                   fonts[[f]]$size, fonts[[f]]$file))
+                   fonts[[f]]$size, fonts[[f]]$file, colour[1]))
     
     set("h",
         get("h") + engine$charMetric(op$blocks$op.opcode$fileRaw, fonts, f))    
@@ -108,6 +109,7 @@ glyph_set <- function(op) {
         stop("Glyph support not available for TeX/Type1 fonts")
     device <- get("device")
     engine <- get("engine")
+    colour <- get("colour")
     char <- engine$charEnc(op$blocks$op.opparams$fileRaw,
                            fonts[[f]]$postscriptname,
                            device)
@@ -118,7 +120,7 @@ glyph_set <- function(op) {
     weight <- fontWeight(fonts, f)
     style <- fontStyle(fonts, f)
     addGlyph(glyph(x, y, char, index, family, weight, style,
-                   fonts[[f]]$size, fonts[[f]]$file))
+                   fonts[[f]]$size, fonts[[f]]$file, colour[1]))
     
     set("h",
         get("h") + engine$charMetric(op$blocks$op.opparams$fileRaw, fonts, f))

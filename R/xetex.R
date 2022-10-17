@@ -272,6 +272,52 @@ glyph_op_253 <- function(op) {
 glyph_op_254 <- glyph_op_253
 
 ################################################################################
+## typeset
+
+typeset_op_252 <- op_ignore
+
+typeset_op_253 <- function(op) {
+    x <- get("h")
+    y <- get("v")
+    fonts <- get("fonts")
+    f <- get("f")
+    colour <- get("colour")
+
+    n <- blockValue(op$blocks$op.opparams.n)
+    xIndex <- 2*(1:n) - 1
+    yIndex <- xIndex + 1
+    glyphX <- unlist(lapply(xIndex,
+                            function(i) {
+                                name <- paste0("op.opparams.glyphs.xy", i)
+                                blockValue(op$blocks[[name]])
+                            }))
+    glyphY <- unlist(lapply(yIndex,
+                            function(i) {
+                                name <- paste0("op.opparams.glyphs.xy", i)
+                                blockValue(op$blocks[[name]])
+                            }))
+    id <- blockValue(op$blocks$op.opparams.glyphs.id)
+    ## These need to be cached as part of the font
+    weight <- fontWeight(fonts, f)
+    style <- fontStyle(fonts, f)
+    family <- ttxFontFamily(fonts, f)
+    mapply(function(x, y, index, filename, fontindex) {
+               addGlyph(glyph(x, y,
+                              "", index,
+                              family=family, weight=weight, style=style,
+                              size=fonts[[f]]$size, filename, fontindex,
+                              colour[1]))
+           },
+           fromTeX(x + glyphX - get("left")),
+           fromTeX(y + glyphY - get("top")),
+           id, fonts[[f]]$file, fonts[[f]]$index)
+    widths <- unlist(lapply(id, xeCharWidth, fonts, f))
+    set("h", get("h") + sum(widths))
+}
+
+typeset_op_254 <- typeset_op_253
+
+################################################################################
 ## grobs
 
 op_no_support <- function(op) {
@@ -289,32 +335,32 @@ grid_op_254 <- op_no_support
 
 xeEngine <- function(engine="xelatex",
                      options="--no-pdf",
-                     special=previewSpecial) {
+                     special=combineSpecials(previewSpecial, colourSpecial)) {
     TeXengine(engine, options, special=special, dviSuffix=".xdv")
 }
 
 xelatexEngine <- xeEngine()
 
-xePreamble <- function(font="Latin Modern Roman", preview=TRUE) {
-    common <- c("\\documentclass{standalone}",
-                "\\usepackage{fontspec}",
-                "\\usepackage{unicode-math}",
-                paste0("\\setmainfont{", font, "}"))
-    if (preview) {
-        c(common,
-          previewPreamble)
-    } else {
-        c(common,
-          "\\begin{document}")
-    }
+xePreamble <- function(font="Latin Modern Roman", preview=TRUE, colour=TRUE) {
+    preamble <- c("\\documentclass{standalone}",
+                  "\\usepackage{fontspec}",
+                  "\\usepackage{unicode-math}",
+                  paste0("\\setmainfont{", font, "}"))
+    if (preview) 
+        preamble <- c(preamble, previewPreamble)
+    if (colour)
+        preamble <- c(preamble, colourPreamble)
+    preamble <- c(preamble, "\\begin{document}")
+    if (preview)
+        preamble <- c(preamble, previewStart)
+    preamble
 }
 
 xePostamble <- function(preview=TRUE) {
-    if (preview) {
-        previewPostamble
-    } else {
-        "\\end{document}"
-    }
+    postamble <- "\\end{document}"
+    if (preview) 
+        postamble <- c(previewEnd, postamble)
+    postamble
 }
 
 xelatexGrob <- function(tex, ...,
