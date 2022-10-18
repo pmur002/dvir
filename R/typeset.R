@@ -207,6 +207,7 @@ dviTypeset <- function(dvi,
                        hjust="centre", vjust="centre",
                        device=names(dev.cur()),
                        name=NULL,
+                       gp=gpar(),
                        engine=latexEngine,
                        initFonts=getOption("dvir.initFonts"),
                        ...) {
@@ -226,7 +227,7 @@ dviTypeset <- function(dvi,
     glyphs <- dvitypeset(dvi, metrics, device, engine)
     ## Ensure that metric PDF device is killed
     killMetricDev()
-    glyphGrob(glyphs, x, y, hjust=hjust, vjust=vjust, name=name)
+    glyphGrob(glyphs, x, y, hjust=hjust, vjust=vjust, name=name, gp=gp)
 }
 
 ################################################################################
@@ -238,6 +239,7 @@ typesetGrob <- function(tex,
                         hjust="centre", vjust="centre",
                         device=names(dev.cur()),
                         name=NULL,
+                        gp=gpar(),
                         preamble=getOption("dvir.preamble"),
                         postamble=getOption("dvir.postamble"),
                         engine=latexEngine,
@@ -253,7 +255,7 @@ typesetGrob <- function(tex,
                        quiet=quiet)
     dvi <- readDVI(dviFile)
     dviTypeset(dvi, x, y, default.units, hjust, vjust, device,
-               name, engine, initFonts)
+               name, gp, engine, initFonts)
 }
 
 grid.typeset <- function(...) {

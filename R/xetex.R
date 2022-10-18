@@ -170,7 +170,7 @@ font_info_252 <- function(op) {
 ## metrics
 
 ## See comments in ttxCharWidth in luatex.R
-xeCharWidth <- function(index, fonts, f, fontsize=10, cex=1) {
+xeCharWidth <- function(index, fonts, f, fontsize=fonts[[f]]$size, cex=1) {
     if (fonts[[f]]$TeXfont) {
         stop("Char metrics not available for TeX/Type1 fonts")
     } else {
@@ -191,6 +191,48 @@ xeCharWidth <- function(index, fonts, f, fontsize=10, cex=1) {
     }
 }
 
+xeCharAscent <- function(index, fonts, f, fontsize=fonts[[f]]$size, cex=1) {
+    if (fonts[[f]]$TeXfont) {
+        stop("Char metrics not available for TeX/Type1 fonts")
+    } else {
+        device <- get("device")
+        font <- getFontFile(fonts[[f]]$file)
+        fontfile <- font$file
+        filesuffix <- font$suffix
+        
+        name <- glyphNameFromIndex(index, device, fontfile, filesuffix)
+        ascent <- ascentFromGlyphName(name, fontfile, filesuffix)
+        headTTX <- getHead(fontfile, filesuffix)
+        unitsPerEm <-
+            as.numeric(xml_text(xml_find_first(headTTX,
+                                               "//unitsPerEm/@value")))
+        ascentPts <- floor(fontsize + .5)*cex*
+            (round(ascent/(unitsPerEm/1000)))/1000
+        xtoTeX(unit(ascentPts, "bigpts"))
+    }
+}
+
+xeCharDescent <- function(index, fonts, f, fontsize=fonts[[f]]$size, cex=1) {
+    if (fonts[[f]]$TeXfont) {
+        stop("Char metrics not available for TeX/Type1 fonts")
+    } else {
+        device <- get("device")
+        font <- getFontFile(fonts[[f]]$file)
+        fontfile <- font$file
+        filesuffix <- font$suffix
+        
+        name <- glyphNameFromIndex(index, device, fontfile, filesuffix)
+        descent <- descentFromGlyphName(name, fontfile, filesuffix)
+        headTTX <- getHead(fontfile, filesuffix)
+        unitsPerEm <-
+            as.numeric(xml_text(xml_find_first(headTTX,
+                                               "//unitsPerEm/@value")))
+        descentPts <- floor(fontsize + .5)*cex*
+            (round(descent/(unitsPerEm/1000)))/1000
+        xtoTeX(unit(descentPts, "bigpts"))
+    }
+}
+
 metric_info_252 <- op_ignore
 
 metric_info_253 <- function(op) {
@@ -200,10 +242,6 @@ metric_info_253 <- function(op) {
     fonts <- get("fonts")
     f <- get("f")
     ## Update for all text positions
-
-    ## FIXME:  this will only be good for bottom-left
-    ##         top-right needs metric info as well
-    
     n <- blockValue(op$blocks$op.opparams.n)
     xIndex <- 2*(1:n) - 1
     yIndex <- xIndex + 1
@@ -219,10 +257,22 @@ metric_info_253 <- function(op) {
                             }))
     
     id <- blockValue(op$blocks$op.opparams.glyphs.id)
-    widths <- unlist(lapply(id, xeCharWidth, fonts, f))
     ## Move to end of glyphs and check position again
+    widths <- unlist(lapply(id, xeCharWidth, fonts, f))
     set("h", get("h") + sum(widths))
     updateHoriz(get("h"))
+    ## Update vertical bounds
+    ascent <- max(unlist(lapply(id, xeCharAscent, fonts, f)))
+    descent <- max(unlist(lapply(id, xeCharDescent, fonts, f)))
+    v <- get("v")
+    top <- get("top")
+    if (!is.finite(top) || v - ascent < top) {
+        set("top", v - ascent)
+    }
+    bottom <- get("bottom")
+    if (!is.finite(bottom) || v + descent > bottom) {
+        set("bottom", v + descent)
+    }     
 }
 
 metric_info_254 <- metric_info_253
@@ -342,7 +392,7 @@ xeEngine <- function(engine="xelatex",
 xelatexEngine <- xeEngine()
 
 xePreamble <- function(font="Latin Modern Roman", preview=TRUE, colour=TRUE) {
-    preamble <- c("\\documentclass{standalone}",
+    preamble <- c("\\documentclass[12pt]{standalone}",
                   "\\usepackage{fontspec}",
                   "\\usepackage{unicode-math}",
                   paste0("\\setmainfont{", font, "}"))

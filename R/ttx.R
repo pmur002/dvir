@@ -55,6 +55,10 @@ getHead <- function(fontfile, suffix) {
     getTable("head", fontfile, suffix)
 }
 
+getHHea <- function(fontfile, suffix) {
+    getTable("hhea", fontfile, suffix)
+}
+
 getGlyphs <- function(fontfile, suffix) {
     getTable("GlyphOrder", fontfile, suffix)
 }
@@ -69,6 +73,10 @@ getOS2 <- function(fontfile, suffix) {
 
 getHHea <- function(fontfile, suffix) {
     getTable("hhea", fontfile, suffix)
+}
+
+getGlyf <- function(fontfile, suffix) {
+    getTable("glyf", fontfile, suffix)
 }
 
 getNameTable <- function(fontfile, suffix) {
@@ -98,6 +106,44 @@ widthFromGlyphName <- function(name, fontfile, filesuffix) {
         name <- name[-1]
     }
     as.numeric(xml_text(metric))
+}
+
+ascentFromGlyphName <- function(name, fontfile, filesuffix) {
+    glyfs <- getGlyf(fontfile, filesuffix)
+    ascent <- NULL
+    ## Try more than one name (if there are multiple options)
+    while (!length(ascent) && length(name)) {
+        ascent <- xml_find_first(glyfs, paste0("//TTGlyph[@name = '",
+                                               name[1],
+                                               "']/@yMax"))
+        name <- name[-1]
+    }
+    if (is.null(ascent)) {
+        ## Just use the font ascent
+        warning("Unable to find glyph ascent; using font ascent")
+        hhea <- getHHea(fontfile, filesuffix)
+        ascent <- xml_find_first(hhea, "//ascent/@value")
+    }
+    as.numeric(xml_text(ascent))
+}
+
+descentFromGlyphName <- function(name, fontfile, filesuffix) {
+    glyfs <- getGlyf(fontfile, filesuffix)
+    descent <- NULL
+    ## Try more than one name (if there are multiple options)
+    while (!length(descent) && length(name)) {
+        descent <- xml_find_first(glyfs, paste0("//TTGlyph[@name = '",
+                                                name[1],
+                                                "']/@yMin"))
+        name <- name[-1]
+    }
+    if (is.null(descent)) {
+        ## Just use the font ascent
+        warning("Unable to find glyph descent; using font descent")
+        hhea <- getHHea(fontfile, filesuffix)
+        descent <- xml_find_first(hhea, "//descent/@value")
+    }
+    as.numeric(xml_text(descent))
 }
 
 ttxFontFamily <- function(fonts, f) {
