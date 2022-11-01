@@ -26,7 +26,7 @@ typesetsetchar <- function(op) {
     weight <- fontWeight(fonts, f)
     style <- fontStyle(fonts, f)
     addGlyph(glyph(x, y, char, index, family, weight, style,
-                   fonts[[f]]$size, fonts[[f]]$file, colour[1]))
+                   fonts[[f]]$size, fonts[[f]]$file, colour=colour[1]))
     
     set("h",
         get("h") + engine$charMetric(op$blocks$op.opcode$fileRaw, fonts, f))    
@@ -59,7 +59,7 @@ typesetset <- function(op) {
     weight <- fontWeight(fonts, f)
     style <- fontStyle(fonts, f)
     addGlyph(glyph(x, y, char, index, family, weight, style,
-                   fonts[[f]]$size, fonts[[f]]$file, colour[1]))
+                   fonts[[f]]$size, fonts[[f]]$file, colour=colour[1]))
     
     set("h",
         get("h") + engine$charMetric(op$blocks$op.opparams$fileRaw, fonts, f))
