@@ -7,9 +7,8 @@
 op255 <- int1
 
 print_op_255 <- function(op) {
-    txt <- blockValue(op$blocks$op.opparams)
-    str <- paste0("op255        ",
-                  "txt=", txt, "\n")
+    dir <- blockValue(op$blocks$op.opparams)
+    str <- paste0("dir          ", dir, "\n")
     cat(str)
 }
 
