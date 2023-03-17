@@ -45,6 +45,9 @@ op_set_char <- function(op) {
                            fonts[[f]]$postscriptname,
                            device)
     family <- fontFamily(fonts[[f]], char, device)
+    colour <- get("colour")[1]
+    if (is.na(colour))
+        colour <- "black"
     ## "native" rather than "mm" because the grobs will be drawn
     ## within a viewport with scales based on "mm" dimensions of
     ## the entire DVI
@@ -57,7 +60,8 @@ op_set_char <- function(op) {
                            ## font *design size*
                            ## (see http://makingtexwork.sourceforge.net/mtw/ch05.html
                            ##  section "The Issue of Size")
-                           cex=get("scale")))
+                           cex=get("scale"),
+                           col=colour))
     set("h",
         get("h") + engine$charMetric(op$blocks$op.opcode$fileRaw, fonts, f))
     debugline("char")
@@ -78,6 +82,9 @@ op_set <- function(op) {
                            fonts[[f]]$postscriptname,
                            device)
     family <- fontFamily(fonts[[f]], char, device)
+    colour <- get("colour")[1]
+    if (is.na(colour))
+        colour <- "black"
     ## "native" rather than "mm" because the grobs will be drawn
     ## within a viewport with scales based on "mm" dimensions of
     ## the entire DVI
@@ -90,7 +97,8 @@ op_set <- function(op) {
                            ## font *design size*
                            ## (see http://makingtexwork.sourceforge.net/mtw/ch05.html
                            ##  section "The Issue of Size")
-                           cex=get("scale")))
+                           cex=get("scale"),
+                           col=colour))
     set("h",
         get("h") + engine$charMetric(op$blocks$op.opparams$fileRaw, fonts, f))
     debugline("char")
