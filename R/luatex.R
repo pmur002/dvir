@@ -179,7 +179,8 @@ luaDefinePostScriptFont <- function(fontInfo) {
     list(name=familyName,
          afm=afmFile, file=fontFile,
          postscriptname=fullName,
-         size=10)
+         ## HACK
+         size=fontSize(basename(fontInfo$fontfile)))
 }
 
 luaDefinePDFFont <- function(fontInfo) {
@@ -221,7 +222,8 @@ luaDefinePDFFont <- function(fontInfo) {
     list(name=familyName,
          afm=afmFile, file=fontFile,
          postscriptname=fullName,
-         size=10)
+         ## HACK
+         size=fontSize(basename(fontInfo$fontfile)))
 }
 
 luaDefineCairoFont <- function(fontInfo) {
@@ -231,7 +233,8 @@ luaDefineCairoFont <- function(fontInfo) {
          postscriptname=fontInfo$FullName,
          family=familyName,
          dir=fontInfo$dir,
-         size=10)
+         ## HACK
+         size=fontSize(basename(fontInfo$fontfile)))
 }
 
 luaDefineFont <- function(fontname, device) {
